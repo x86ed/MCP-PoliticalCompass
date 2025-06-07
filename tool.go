@@ -69,7 +69,7 @@ func initializeQuestions() {
 func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	
+
 	// Initialize questions if not done already
 	initializeQuestions()
 
@@ -343,7 +343,7 @@ func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
 		// Normalize scores like the main calculation
 		economicScore = (economicScore/8.0 + 0.38) * 10.0
 		socialScore = (socialScore/19.5 + 2.41) * 10.0
-		// Convert back to -10 to +10 scale  
+		// Convert back to -10 to +10 scale
 		economicScore = (economicScore - 5.0) * 2.0
 		socialScore = (socialScore - 5.0) * 2.0
 	}
@@ -363,10 +363,10 @@ func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
 **Current Quadrant:** %s
 
 **Response Distribution:**
-`, answered, totalQuestions, remaining, 
+`, answered, totalQuestions, remaining,
 		float64(answered)/float64(totalQuestions)*100,
 		answered,
-		economicScore, abs(economicScore)/10*100, 
+		economicScore, abs(economicScore)/10*100,
 		func() string {
 			if economicScore > 0 {
 				return "Right (Market)"
@@ -387,7 +387,7 @@ func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
 	for _, response := range quizState.Responses {
 		responseCount[response.String()]++
 	}
-	
+
 	responses := []string{"Strongly Disagree", "Disagree", "Agree", "Strongly Agree"}
 	for _, resp := range responses {
 		count := responseCount[resp]

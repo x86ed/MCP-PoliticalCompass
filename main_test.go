@@ -442,8 +442,6 @@ func TestPoliticalCompassBoundaryScores(t *testing.T) {
 	}
 }
 
-
-
 // Test main.go functions
 func TestMainFunctions(t *testing.T) {
 	t.Run("createServerTransport", func(t *testing.T) {

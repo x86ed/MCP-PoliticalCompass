@@ -195,13 +195,13 @@ func generatePoliticalCompassSVG(economicScore, socialScore float64) string {
 		userX = margin
 	}
 	if userX > width-margin {
-		userX = width-margin
+		userX = width - margin
 	}
 	if userY < margin {
 		userY = margin
 	}
 	if userY > height-margin {
-		userY = height-margin
+		userY = height - margin
 	}
 
 	svg := fmt.Sprintf(`<svg width="%d" height="%d" xmlns="http://www.w3.org/2000/svg">
@@ -259,36 +259,36 @@ func generatePoliticalCompassSVG(economicScore, socialScore float64) string {
     Position: (%.2f, %.2f)
   </text>
 </svg>`,
-		width, height,                                    // SVG dimensions
-		width, height,                                    // Background rect
-		margin, margin, centerX-margin, centerY-margin,  // Auth Left
-		centerX, margin, centerX-margin, centerY-margin, // Auth Right  
+		width, height, // SVG dimensions
+		width, height, // Background rect
+		margin, margin, centerX-margin, centerY-margin, // Auth Left
+		centerX, margin, centerX-margin, centerY-margin, // Auth Right
 		margin, centerY, centerX-margin, centerY-margin, // Lib Left
 		centerX, centerY, centerX-margin, centerY-margin, // Lib Right
-		centerX, margin, centerX, height-margin,          // Vertical center line
-		margin, centerY, width-margin, centerY,           // Horizontal center line
-		margin+(centerX-margin)/2, centerY-5, margin+(centerX-margin)/2, centerY+5,     // Economic left mark
-		centerX+(centerX-margin)/2, centerY-5, centerX+(centerX-margin)/2, centerY+5,   // Economic right mark
-		centerX-5, margin+(centerY-margin)/2, centerX+5, margin+(centerY-margin)/2,     // Social top mark
-		centerX-5, centerY+(centerY-margin)/2, centerX+5, centerY+(centerY-margin)/2,   // Social bottom mark
-		centerX, height-15,                               // Economic label
-		margin-5, centerY+15,                             // Left label
-		width-margin+5, centerY+15,                       // Right label
-		15, centerY, 15, centerY,                         // Social label
-		15, margin+(centerY-margin)/2, 15, margin+(centerY-margin)/2,     // Libertarian label
-		15, centerY+(centerY-margin)/2, 15, centerY+(centerY-margin)/2,   // Authoritarian label
-		margin+(centerX-margin)/2, margin+15,             // Auth Left label
-		margin+(centerX-margin)/2, margin+25,             // Auth Left label 2
-		centerX+(centerX-margin)/2, margin+15,            // Auth Right label
-		centerX+(centerX-margin)/2, margin+25,            // Auth Right label 2
-		margin+(centerX-margin)/2, height-margin+15,      // Lib Left label
-		margin+(centerX-margin)/2, height-margin+25,      // Lib Left label 2
-		centerX+(centerX-margin)/2, height-margin+15,     // Lib Right label
-		centerX+(centerX-margin)/2, height-margin+25,     // Lib Right label 2
-		userX, userY,                                     // User position circle
-		userX, userY+1,                                   // User position text
-		margin, height-30,                                // Position text
-		economicScore, socialScore,                       // Position coordinates
+		centerX, margin, centerX, height-margin, // Vertical center line
+		margin, centerY, width-margin, centerY, // Horizontal center line
+		margin+(centerX-margin)/2, centerY-5, margin+(centerX-margin)/2, centerY+5, // Economic left mark
+		centerX+(centerX-margin)/2, centerY-5, centerX+(centerX-margin)/2, centerY+5, // Economic right mark
+		centerX-5, margin+(centerY-margin)/2, centerX+5, margin+(centerY-margin)/2, // Social top mark
+		centerX-5, centerY+(centerY-margin)/2, centerX+5, centerY+(centerY-margin)/2, // Social bottom mark
+		centerX, height-15, // Economic label
+		margin-5, centerY+15, // Left label
+		width-margin+5, centerY+15, // Right label
+		15, centerY, 15, centerY, // Social label
+		15, margin+(centerY-margin)/2, 15, margin+(centerY-margin)/2, // Libertarian label
+		15, centerY+(centerY-margin)/2, 15, centerY+(centerY-margin)/2, // Authoritarian label
+		margin+(centerX-margin)/2, margin+15, // Auth Left label
+		margin+(centerX-margin)/2, margin+25, // Auth Left label 2
+		centerX+(centerX-margin)/2, margin+15, // Auth Right label
+		centerX+(centerX-margin)/2, margin+25, // Auth Right label 2
+		margin+(centerX-margin)/2, height-margin+15, // Lib Left label
+		margin+(centerX-margin)/2, height-margin+25, // Lib Left label 2
+		centerX+(centerX-margin)/2, height-margin+15, // Lib Right label
+		centerX+(centerX-margin)/2, height-margin+25, // Lib Right label 2
+		userX, userY, // User position circle
+		userX, userY+1, // User position text
+		margin, height-30, // Position text
+		economicScore, socialScore, // Position coordinates
 	)
 
 	return svg

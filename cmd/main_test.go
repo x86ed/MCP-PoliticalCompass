@@ -571,3 +571,62 @@ func TestServerSetupIntegration(t *testing.T) {
 		// since setupServer would return an error if registration failed
 	})
 }
+
+// TestDetailedOutputValidation validates the complete output format and checks for any text errors
+func TestDetailedOutputValidation(t *testing.T) {
+	resetState()
+
+	// Start the quiz
+	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+	// Set up for a specific completion scenario - Libertarian Left
+	totalEconomicScore = (1.5 - 0.38) * 8.0 // Economic score: +1.5
+	totalSocialScore = (1.2 - 2.41) * 19.5  // Social score: +1.2
+	questionCount = len(polcomp.AllQuestions)
+	currentIndex = len(polcomp.AllQuestions)
+
+	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	content := response.Content[0].TextContent.Text
+
+	// Print the output for manual inspection
+	t.Logf("Complete Quiz Output:\n%s", content)
+
+	// Validate that text explanations are correct
+	if !strings.Contains(content, "Left: + | Right: -") {
+		t.Error("Economic score explanation is incorrect or missing")
+	}
+
+	if !strings.Contains(content, "Libertarian: + | Authoritarian: -") {
+		t.Error("Social score explanation is incorrect or missing")
+	}
+
+	if !strings.Contains(content, "Your Political Quadrant: Libertarian Left") {
+		t.Error("Expected Libertarian Left quadrant for positive economic and social scores")
+	}
+
+	// Check that the scores are displayed correctly
+	if !strings.Contains(content, "Final Economic Score: 1.50") {
+		t.Error("Economic score not displayed correctly")
+	}
+
+	if !strings.Contains(content, "Final Social Score: 1.20") {
+		t.Error("Social score not displayed correctly")
+	}
+
+	// Validate SVG is present and well-formed
+	if !strings.Contains(content, "<svg width=\"400\" height=\"400\"") {
+		t.Error("SVG dimensions not correct")
+	}
+
+	if !strings.Contains(content, "xmlns=\"http://www.w3.org/2000/svg\"") {
+		t.Error("SVG namespace missing")
+	}
+
+	if !strings.Contains(content, "Position: (1.50, 1.20)") {
+		t.Error("Position coordinates not displayed correctly in SVG")
+	}
+}

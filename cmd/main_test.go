@@ -113,12 +113,13 @@ func TestPoliticalCompassProgressDisplay(t *testing.T) {
 		t.Error("should show progress information")
 	}
 
-	if !strings.Contains(content, "Current Economic Score:") {
-		t.Error("should show current economic score")
+	// Should NOT show intermediate scores (only final results)
+	if strings.Contains(content, "Current Economic Score:") {
+		t.Error("should NOT show current economic score during quiz")
 	}
 
-	if !strings.Contains(content, "Current Social Score:") {
-		t.Error("should show current social score")
+	if strings.Contains(content, "Current Social Score:") {
+		t.Error("should NOT show current social score during quiz")
 	}
 
 	if !strings.Contains(content, "Question 2 of") {

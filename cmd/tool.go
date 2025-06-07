@@ -145,18 +145,12 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 			"After answering, call this tool again to continue to the next question.",
 			questionCount, len(polcomp.AllQuestions), question.Text)
 	} else {
-		// Show progress and current scores
-		avgEconomicScore := totalEconomicScore / float64(questionCount-1)
-		avgSocialScore := totalSocialScore / float64(questionCount-1)
-
 		message = fmt.Sprintf("✅ Response recorded!\n\n"+
-			"Progress: %d of %d questions completed\n"+
-			"Current Economic Score: %.2f (Left: + | Right: -)\n"+
-			"Current Social Score: %.2f (Libertarian: + | Authoritarian: -)\n\n"+
+			"Progress: %d of %d questions completed\n\n"+
 			"Question %d of %d:\n%s\n\n"+
 			"Please respond with: Strongly Disagree, Disagree, Agree, or Strongly Agree\n"+
 			"After answering, call this tool again to continue to the next question.",
-			questionCount-1, len(polcomp.AllQuestions), avgEconomicScore, avgSocialScore,
+			questionCount-1, len(polcomp.AllQuestions),
 			questionCount, len(polcomp.AllQuestions), question.Text)
 	}
 

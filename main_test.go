@@ -648,3 +648,191 @@ func TestQuizStatusTool(t *testing.T) {
 		t.Error("should not show 'Current Quadrant' label for complete quiz")
 	}
 }
+
+func TestFirstCallBehaviorAndWeightAlignment(t *testing.T) {
+	resetState()
+
+	// First call should NOT process any answer, only show the first question
+	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	if err != nil {
+		t.Fatalf("unexpected error on first call: %v", err)
+	}
+
+	content := response.Content[0].TextContent.Text
+
+	// Verify first call shows start message
+	if !strings.Contains(content, "Political Compass Quiz Started!") {
+		t.Error("first call should show quiz started message")
+	}
+
+	// Verify first call shows question 1
+	if !strings.Contains(content, "Question 1 of") {
+		t.Error("first call should show Question 1")
+	}
+
+	// Verify we have exactly 1 question count but no responses yet
+	if questionCount != 1 {
+		t.Errorf("expected questionCount to be 1 after first call, got %d", questionCount)
+	}
+
+	if len(quizState.Responses) != 0 {
+		t.Errorf("expected 0 responses after first call, got %d", len(quizState.Responses))
+	}
+
+	// Verify currentIndex is 1 (pointing to next question to be shown)
+	if currentIndex != 1 {
+		t.Errorf("expected currentIndex to be 1 after first call, got %d", currentIndex)
+	}
+
+	// Get the question that was shown (index 0 in shuffled questions)
+	firstQuestionIndex := shuffledQuestions[0]
+	firstQuestion := politicalcompass.AllQuestions[firstQuestionIndex]
+
+	// Answer the first question
+	response2, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	if err != nil {
+		t.Fatalf("unexpected error answering first question: %v", err)
+	}
+
+	// Verify the response was recorded and scores calculated
+	if len(quizState.Responses) != 1 {
+		t.Errorf("expected 1 response after answering first question, got %d", len(quizState.Responses))
+	}
+
+	if quizState.Responses[0] != politicalcompass.Agree {
+		t.Errorf("expected first response to be Agree, got %v", quizState.Responses[0])
+	}
+
+	// Verify that the scores match the weights for the first question with "Agree" response
+	expectedEconomicScore := firstQuestion.Economic[int(politicalcompass.Agree)]
+	expectedSocialScore := firstQuestion.Social[int(politicalcompass.Agree)]
+
+	if totalEconomicScore != expectedEconomicScore {
+		t.Errorf("expected economic score %f, got %f", expectedEconomicScore, totalEconomicScore)
+	}
+
+	if totalSocialScore != expectedSocialScore {
+		t.Errorf("expected social score %f, got %f", expectedSocialScore, totalSocialScore)
+	}
+
+	content2 := response2.Content[0].TextContent.Text
+
+	// Verify second call shows response recorded
+	if !strings.Contains(content2, "Response recorded!") {
+		t.Error("second call should show response recorded message")
+	}
+
+	// Verify second call shows question 2
+	if !strings.Contains(content2, "Question 2 of") {
+		t.Error("second call should show Question 2")
+	}
+
+	// Verify progress shows 1 completed
+	if !strings.Contains(content2, "Progress: 1 of") {
+		t.Error("second call should show progress of 1 completed")
+	}
+}
+
+func TestWeightAssignmentConsistency(t *testing.T) {
+	resetState()
+
+	// Start quiz and answer a few questions with different responses
+	handlePoliticalCompass(PoliticalCompassArgs{Response: ""}) // Start
+
+	responses := []politicalcompass.Response{
+		politicalcompass.StronglyDisagree,
+		politicalcompass.Disagree,
+		politicalcompass.Agree,
+		politicalcompass.StronglyAgree,
+	}
+
+	responseStrings := []string{
+		"Strongly Disagree",
+		"Disagree", 
+		"Agree",
+		"Strongly Agree",
+	}
+
+	expectedEconomicTotal := 0.0
+	expectedSocialTotal := 0.0
+
+	// Answer first 4 questions and track expected scores
+	for i, respStr := range responseStrings {
+		questionIndex := shuffledQuestions[i]
+		question := politicalcompass.AllQuestions[questionIndex]
+		response := responses[i]
+
+		// Calculate expected scores before answering
+		expectedEconomicScore := question.Economic[int(response)]
+		expectedSocialScore := question.Social[int(response)]
+		expectedEconomicTotal += expectedEconomicScore
+		expectedSocialTotal += expectedSocialScore
+
+		// Answer the question
+		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: respStr})
+		if err != nil {
+			t.Fatalf("unexpected error on question %d: %v", i+1, err)
+		}
+
+		// Verify accumulated scores match expectations
+		if totalEconomicScore != expectedEconomicTotal {
+			t.Errorf("after question %d: expected economic total %f, got %f", 
+				i+1, expectedEconomicTotal, totalEconomicScore)
+		}
+
+		if totalSocialScore != expectedSocialTotal {
+			t.Errorf("after question %d: expected social total %f, got %f", 
+				i+1, expectedSocialTotal, totalSocialScore)
+		}
+	}
+}
+
+func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
+	resetState()
+
+	// Start quiz
+	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+	// Verify we can answer exactly 62 questions (no more, no less)
+	for i := 0; i < len(politicalcompass.AllQuestions); i++ {
+		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		if err != nil {
+			t.Fatalf("unexpected error on question %d: %v", i+1, err)
+		}
+
+		// Check that we don't exceed the bounds
+		if currentIndex > len(shuffledQuestions) {
+			t.Errorf("currentIndex %d exceeds shuffled questions length %d after question %d", 
+				currentIndex, len(shuffledQuestions), i+1)
+		}
+	}
+
+	// Verify we have answered exactly 62 questions
+	if questionCount != len(politicalcompass.AllQuestions) {
+		t.Errorf("expected questionCount to be %d, got %d", 
+			len(politicalcompass.AllQuestions), questionCount)
+	}
+
+	// Verify we have exactly 62 responses
+	if len(quizState.Responses) != len(politicalcompass.AllQuestions) {
+		t.Errorf("expected %d responses, got %d", 
+			len(politicalcompass.AllQuestions), len(quizState.Responses))
+	}
+
+	// Verify currentIndex equals length (pointing past the end, indicating completion)
+	if currentIndex != len(shuffledQuestions) {
+		t.Errorf("expected currentIndex to be %d (length), got %d", 
+			len(shuffledQuestions), currentIndex)
+	}
+
+	// Trying to answer another question should return completion message
+	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	if err != nil {
+		t.Fatalf("unexpected error when trying to answer beyond 62 questions: %v", err)
+	}
+
+	content := response.Content[0].TextContent.Text
+	if !strings.Contains(content, "Political Compass Quiz Complete!") {
+		t.Error("should show completion message when trying to answer beyond 62 questions")
+	}
+}

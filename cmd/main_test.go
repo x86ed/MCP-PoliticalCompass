@@ -170,6 +170,51 @@ func TestPoliticalCompassQuizCompletion(t *testing.T) {
 	}
 }
 
+func TestPoliticalCompassCompletionWithSVG(t *testing.T) {
+	resetState()
+
+	// Simulate answering all questions
+	handlePoliticalCompass(PoliticalCompassArgs{Response: ""}) // Start
+
+	// Answer all questions
+	for i := 0; i < len(polcomp.AllQuestions); i++ {
+		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		if err != nil {
+			t.Fatalf("unexpected error on question %d: %v", i+1, err)
+		}
+	}
+
+	// Get the last response which should contain the SVG
+	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	if err != nil {
+		t.Fatalf("unexpected error on completion: %v", err)
+	}
+
+	content := response.Content[0].TextContent.Text
+
+	// Check that SVG is included
+	if !strings.Contains(content, "<svg") {
+		t.Error("completion response should contain SVG")
+	}
+
+	if !strings.Contains(content, "</svg>") {
+		t.Error("completion response should contain closing SVG tag")
+	}
+
+	if !strings.Contains(content, "xmlns=\"http://www.w3.org/2000/svg\"") {
+		t.Error("SVG should have proper namespace")
+	}
+
+	if !strings.Contains(content, "Political Compass Quiz Complete!") {
+		t.Error("should show quiz completion message")
+	}
+
+	// Check that position coordinates are included in SVG
+	if !strings.Contains(content, "Position:") {
+		t.Error("SVG should contain position coordinates")
+	}
+}
+
 func TestPoliticalCompassQuadrantCalculations(t *testing.T) {
 	testCases := []struct {
 		name          string

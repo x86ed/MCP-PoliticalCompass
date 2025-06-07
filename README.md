@@ -30,6 +30,15 @@ This MCP server allows AI agents to take the complete Political Compass quiz and
 - **Real-time progress tracking** with current scores
 - **Authentic scoring algorithm** that matches the original Political Compass methodology
 - **Detailed final analysis** with quadrant placement and scores
+- **Interactive SVG visualization** of results on political compass grid
+
+### Visualization Features
+
+- **Color-coded quadrants**: Each political quadrant has a distinct background color
+- **Position marker**: Red dot shows exact location on the political compass
+- **Grid lines and labels**: Clear axis markings and quadrant labels
+- **Coordinate display**: Shows precise numerical position (Economic, Social)
+- **Professional styling**: Clean, readable design suitable for analysis
 
 ### Example Interactions
 
@@ -52,6 +61,7 @@ Response: "Strongly Agree"
 - Final Economic Score (e.g., -1.23)
 - Final Social Score (e.g., 2.45)
 - Political Quadrant placement
+- **Interactive SVG visualization** showing position on political compass grid
 - Total questions answered
 
 ## Installation & Setup
@@ -124,12 +134,14 @@ go tool cover -html=coverage.out -o coverage.html
 
 ### Test Coverage
 
-The project maintains **88.3% code coverage** with comprehensive testing:
+The project maintains **86.6% code coverage** with comprehensive testing:
 
 - **100% coverage** on all core business logic (`tool.go`)
 - **100% coverage** on prompt handlers (`prompt.go`)
+- **100% coverage** on data structures (`polcomp` package)
 - **45+ individual test cases** covering edge cases, boundary conditions, and error handling
 - **Integration tests** for complete quiz workflows
+- **SVG generation tests** for visualization features
 
 ### Key Dependencies
 
@@ -193,6 +205,8 @@ The server implements the authentic Political Compass scoring algorithm:
 
 ## Version History
 
+- **v1.0.5**: Added interactive SVG visualization for quiz results
+- **v1.0.4**: Fixed README.md markdown formatting issues
 - **v1.0.3**: Significantly improved test coverage to 88.3%
 - **v1.0.2**: Fixed scoring algorithm to match original Political Compass
 - **v1.0.1**: Initial bug fixes and improvements

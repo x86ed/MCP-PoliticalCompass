@@ -144,7 +144,12 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 			"Final Economic Score: %.2f (Left: + | Right: -)\n"+
 			"Final Social Score: %.2f (Libertarian: + | Authoritarian: -)\n"+
 			"Your Political Quadrant: %s\n\n"+
+			"**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n"+
 			"%s\n\n"+
+			"**Instructions for displaying the results:**\n"+
+			"1. Show the above scores and quadrant information to the user\n"+
+			"2. Render the SVG chart above so the user can see their position visually\n"+
+			"3. The red dot on the chart shows your exact political position\n\n"+
 			"Thank you for completing the Political Compass quiz!",
 			questionCount, avgEconomicScore, avgSocialScore, quadrant, svg)
 
@@ -161,15 +166,21 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 	if isFirstQuestion {
 		message = fmt.Sprintf("🗳️ Political Compass Quiz Started!\n\n"+
 			"Question %d of %d:\n%s\n\n"+
-			"Please respond with: strongly_disagree, disagree, agree, or strongly_agree\n"+
-			"After answering, call this tool again to continue to the next question.",
+			"Please respond with: strongly_disagree, disagree, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
 			questionCount, len(politicalcompass.AllQuestions), question.Text)
 	} else {
 		message = fmt.Sprintf("✅ Response recorded!\n\n"+
 			"Progress: %d of %d questions completed\n\n"+
 			"Question %d of %d:\n%s\n\n"+
-			"Please respond with: strongly_disagree, disagree, agree, or strongly_agree\n"+
-			"After answering, call this tool again to continue to the next question.",
+			"Please respond with: strongly_disagree, disagree, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
 			questionCount-1, len(politicalcompass.AllQuestions),
 			questionCount, len(politicalcompass.AllQuestions), question.Text)
 	}

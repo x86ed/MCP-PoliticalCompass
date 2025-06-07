@@ -563,12 +563,20 @@ func TestQuizStatusTool(t *testing.T) {
 		t.Error("should show zero progress initially")
 	}
 
-	// Start quiz and answer some questions
+	// Verify scores are not shown when no questions answered
+	if strings.Contains(content, "Current Scores:") || strings.Contains(content, "Final Scores:") {
+		t.Error("should not show scores when no questions answered")
+	}
+	if strings.Contains(content, "Current Quadrant:") || strings.Contains(content, "Your Quadrant:") {
+		t.Error("should not show quadrant when no questions answered")
+	}
+
+	// Start quiz and answer some questions (but not all)
 	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
 	handlePoliticalCompass(PoliticalCompassArgs{Response: "Disagree"})
 
-	// Check status after answering questions
+	// Check status after answering questions (incomplete quiz)
 	response, err = handleQuizStatus(QuizStatusArgs{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -581,5 +589,62 @@ func TestQuizStatusTool(t *testing.T) {
 
 	if !strings.Contains(content, "Response Distribution:") {
 		t.Error("should show response distribution")
+	}
+
+	// Verify scores and quadrant are NOT shown for incomplete quiz
+	if strings.Contains(content, "Current Scores:") || strings.Contains(content, "Final Scores:") {
+		t.Error("should not show scores for incomplete quiz")
+	}
+	if strings.Contains(content, "Current Quadrant:") || strings.Contains(content, "Your Quadrant:") {
+		t.Error("should not show quadrant for incomplete quiz")
+	}
+	if strings.Contains(content, "Economic axis:") {
+		t.Error("should not show economic axis scores for incomplete quiz")
+	}
+	if strings.Contains(content, "Social axis:") {
+		t.Error("should not show social axis scores for incomplete quiz")
+	}
+
+	// Complete the entire quiz to test final status
+	// Answer all remaining questions with "Agree"
+	for i := 2; i < 62; i++ {
+		handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	}
+
+	// Check status after completing quiz
+	response, err = handleQuizStatus(QuizStatusArgs{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	content = response.Content[0].TextContent.Text
+	if !strings.Contains(content, "Questions answered: 62/62") {
+		t.Error("should show complete progress")
+	}
+
+	if !strings.Contains(content, "Questions remaining: 0") {
+		t.Error("should show zero remaining questions")
+	}
+
+	// Verify scores and quadrant ARE shown for complete quiz
+	if !strings.Contains(content, "Final Scores:") {
+		t.Error("should show final scores for complete quiz")
+	}
+	if !strings.Contains(content, "Your Quadrant:") {
+		t.Error("should show quadrant for complete quiz")
+	}
+	if !strings.Contains(content, "Economic axis:") {
+		t.Error("should show economic axis scores for complete quiz")
+	}
+	if !strings.Contains(content, "Social axis:") {
+		t.Error("should show social axis scores for complete quiz")
+	}
+
+	// Should not show "Current" labels anymore
+	if strings.Contains(content, "Current Scores:") {
+		t.Error("should not show 'Current Scores' label for complete quiz")
+	}
+	if strings.Contains(content, "Current Quadrant:") {
+		t.Error("should not show 'Current Quadrant' label for complete quiz")
 	}
 }

@@ -355,32 +355,35 @@ func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
 - Questions answered: %d/%d
 - Questions remaining: %d
 - Completion: %.1f%%
+`, answered, totalQuestions, remaining,
+		float64(answered)/float64(totalQuestions)*100)
 
-**Current Scores:** (based on %d responses)
+	// Only show scores and quadrant if quiz is complete
+	if remaining == 0 && answered > 0 {
+		statusText += fmt.Sprintf(`
+**Final Scores:**
 - Economic axis: %.2f (%.2f%% toward %s)
 - Social axis: %.2f (%.2f%% toward %s)
 
-**Current Quadrant:** %s
+**Your Quadrant:** %s
+`, economicScore, abs(economicScore)/10*100,
+			func() string {
+				if economicScore > 0 {
+					return "Right (Market)"
+				}
+				return "Left (Planned)"
+			}(),
+			socialScore, abs(socialScore)/10*100,
+			func() string {
+				if socialScore > 0 {
+					return "Libertarian"
+				}
+				return "Authoritarian"
+			}(),
+			getQuadrant(economicScore, socialScore))
+	}
 
-**Response Distribution:**
-`, answered, totalQuestions, remaining,
-		float64(answered)/float64(totalQuestions)*100,
-		answered,
-		economicScore, abs(economicScore)/10*100,
-		func() string {
-			if economicScore > 0 {
-				return "Right (Market)"
-			}
-			return "Left (Planned)"
-		}(),
-		socialScore, abs(socialScore)/10*100,
-		func() string {
-			if socialScore > 0 {
-				return "Libertarian"
-			}
-			return "Authoritarian"
-		}(),
-		getQuadrant(economicScore, socialScore))
+	statusText += "\n**Response Distribution:**\n"
 
 	// Add response distribution
 	responseCount := make(map[string]int)

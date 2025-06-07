@@ -172,10 +172,10 @@ func TestPoliticalCompassQuizCompletion(t *testing.T) {
 
 func TestPoliticalCompassQuadrantCalculations(t *testing.T) {
 	testCases := []struct {
-		name           string
-		economicScore  float64
-		socialScore    float64
-		expectedQuad   string
+		name          string
+		economicScore float64
+		socialScore   float64
+		expectedQuad  string
 	}{
 		{"Libertarian Left", 1.0, 1.0, "Libertarian Left"},
 		{"Authoritarian Left", 1.0, -1.0, "Authoritarian Left"},
@@ -184,26 +184,26 @@ func TestPoliticalCompassQuadrantCalculations(t *testing.T) {
 		{"Center-Right Authoritarian", -0.1, -0.1, "Authoritarian Right"},
 		{"Center-Left Libertarian", 0.1, 0.1, "Libertarian Left"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resetState()
-			
+
 			// Start the quiz first
 			handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
-			
+
 			// Manually set scores to simulate reaching the desired final scores
 			totalEconomicScore = (tc.economicScore - 0.38) * 8.0
 			totalSocialScore = (tc.socialScore - 2.41) * 19.5
 			questionCount = len(polcomp.AllQuestions)
 			currentIndex = len(polcomp.AllQuestions) // Set to completion point
-			
+
 			// Call with a valid response to trigger completion logic
 			response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			content := response.Content[0].TextContent.Text
 			if !strings.Contains(content, tc.expectedQuad) {
 				t.Errorf("expected quadrant '%s' but content was: %s", tc.expectedQuad, content)
@@ -269,29 +269,29 @@ func TestResetQuizTool(t *testing.T) {
 func TestPoliticalCompassEdgeCases(t *testing.T) {
 	t.Run("Empty response on first question", func(t *testing.T) {
 		resetState()
-		
+
 		response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		
+
 		content := response.Content[0].TextContent.Text
 		if !strings.Contains(content, "Political Compass Quiz Started!") {
 			t.Error("should start quiz with empty response")
 		}
 	})
-	
+
 	t.Run("Shuffled questions are different each time", func(t *testing.T) {
 		resetState()
 		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 		firstShuffle := make([]int, len(shuffledQuestions))
 		copy(firstShuffle, shuffledQuestions)
-		
+
 		resetState()
 		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 		secondShuffle := make([]int, len(shuffledQuestions))
 		copy(secondShuffle, shuffledQuestions)
-		
+
 		// While technically they could be the same due to randomization,
 		// the probability is extremely low with 62 questions
 		allSame := true
@@ -301,23 +301,23 @@ func TestPoliticalCompassEdgeCases(t *testing.T) {
 				break
 			}
 		}
-		
+
 		if allSame && len(firstShuffle) > 10 {
 			t.Log("Warning: Shuffled questions were identical - this is extremely unlikely but possible")
 		}
 	})
-	
+
 	t.Run("Initialization only happens once", func(t *testing.T) {
 		resetState()
-		
+
 		// Call multiple times
 		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 		firstShuffle := make([]int, len(shuffledQuestions))
 		copy(firstShuffle, shuffledQuestions)
-		
+
 		// Call again without reset - should use same shuffled order
 		handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
-		
+
 		// Shuffled questions should be unchanged
 		for i := range firstShuffle {
 			if firstShuffle[i] != shuffledQuestions[i] {
@@ -330,24 +330,24 @@ func TestPoliticalCompassEdgeCases(t *testing.T) {
 
 func TestPoliticalCompassScoreCalculationDetails(t *testing.T) {
 	resetState()
-	
+
 	// Test that scores are calculated correctly
 	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
-	
+
 	// Get the first question
 	firstQuestionIndex := shuffledQuestions[0]
 	firstQuestion := polcomp.AllQuestions[firstQuestionIndex]
-	
+
 	// Answer with "Agree" (index 2)
 	expectedEconomic := firstQuestion.Economic[2]
 	expectedSocial := firstQuestion.Social[2]
-	
+
 	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
-	
+
 	if totalEconomicScore != expectedEconomic {
 		t.Errorf("expected economic score %f, got %f", expectedEconomic, totalEconomicScore)
 	}
-	
+
 	if totalSocialScore != expectedSocial {
 		t.Errorf("expected social score %f, got %f", expectedSocial, totalSocialScore)
 	}
@@ -355,7 +355,7 @@ func TestPoliticalCompassScoreCalculationDetails(t *testing.T) {
 
 func TestPoliticalCompassBoundaryScores(t *testing.T) {
 	resetState()
-	
+
 	// Test extreme scores that result in boundary quadrant calculations
 	testCases := []struct {
 		name         string
@@ -364,30 +364,30 @@ func TestPoliticalCompassBoundaryScores(t *testing.T) {
 		expectedQuad string
 	}{
 		{"Clear Libertarian Left", 0.5, 0.5, "Libertarian Left"},
-		{"Clear Authoritarian Left", 0.5, -0.5, "Authoritarian Left"},  
+		{"Clear Authoritarian Left", 0.5, -0.5, "Authoritarian Left"},
 		{"Clear Libertarian Right", -0.5, 0.5, "Libertarian Right"},
 		{"Clear Authoritarian Right", -0.5, -0.5, "Authoritarian Right"},
 		{"Exactly zero both", 0.0, 0.0, "Authoritarian Right"},
 		{"Small negative values", -0.1, -0.1, "Authoritarian Right"},
 		{"Small positive values", 0.1, 0.1, "Libertarian Left"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resetState()
 			handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
-			
+
 			// Set up for completion with specific scores
 			totalEconomicScore = (tc.economic - 0.38) * 8.0
 			totalSocialScore = (tc.social - 2.41) * 19.5
 			questionCount = len(polcomp.AllQuestions)
 			currentIndex = len(polcomp.AllQuestions)
-			
+
 			response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			content := response.Content[0].TextContent.Text
 			if !strings.Contains(content, tc.expectedQuad) {
 				t.Errorf("expected quadrant '%s', content: %s", tc.expectedQuad, content)
@@ -401,68 +401,68 @@ func TestPromptHandlers(t *testing.T) {
 	t.Run("uppercase prompt handler", func(t *testing.T) {
 		args := PromptArgs{Input: "hello world"}
 		response, err := handleUppercasePrompt(args)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
-		
+
 		if response == nil {
 			t.Fatal("Expected response, got nil")
 		}
-		
+
 		// Check that the text was converted to uppercase
 		if response.Messages[0].Content.TextContent.Text != "HELLO WORLD" {
 			t.Errorf("Expected 'HELLO WORLD', got '%s'", response.Messages[0].Content.TextContent.Text)
 		}
 	})
-	
+
 	t.Run("reverse prompt handler", func(t *testing.T) {
 		args := PromptArgs{Input: "hello"}
 		response, err := handleReversePrompt(args)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
-		
+
 		if response == nil {
 			t.Fatal("Expected response, got nil")
 		}
-		
+
 		// Check that the text was reversed
 		if response.Messages[0].Content.TextContent.Text != "olleh" {
 			t.Errorf("Expected 'olleh', got '%s'", response.Messages[0].Content.TextContent.Text)
 		}
 	})
-	
+
 	t.Run("uppercase with special characters", func(t *testing.T) {
 		args := PromptArgs{Input: "hello! 123 @#$"}
 		response, err := handleUppercasePrompt(args)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
-		
+
 		if response.Messages[0].Content.TextContent.Text != "HELLO! 123 @#$" {
 			t.Errorf("Expected 'HELLO! 123 @#$', got '%s'", response.Messages[0].Content.TextContent.Text)
 		}
 	})
-	
+
 	t.Run("reverse with unicode characters", func(t *testing.T) {
 		args := PromptArgs{Input: "café"}
 		response, err := handleReversePrompt(args)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
-		
+
 		if response.Messages[0].Content.TextContent.Text != "éfac" {
 			t.Errorf("Expected 'éfac', got '%s'", response.Messages[0].Content.TextContent.Text)
 		}
 	})
-	
+
 	t.Run("empty string handling", func(t *testing.T) {
 		args := PromptArgs{Input: ""}
-		
+
 		// Test uppercase with empty string
 		response, err := handleUppercasePrompt(args)
 		if err != nil {
@@ -471,7 +471,7 @@ func TestPromptHandlers(t *testing.T) {
 		if response.Messages[0].Content.TextContent.Text != "" {
 			t.Errorf("Expected empty string for uppercase, got '%s'", response.Messages[0].Content.TextContent.Text)
 		}
-		
+
 		// Test reverse with empty string
 		response, err = handleReversePrompt(args)
 		if err != nil {
@@ -491,15 +491,15 @@ func TestMainFunctions(t *testing.T) {
 			t.Fatal("Expected transport to be created, got nil")
 		}
 	})
-	
+
 	t.Run("setupServer", func(t *testing.T) {
 		transport := createServerTransport()
 		server, err := setupServer(transport)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error setting up server, got %v", err)
 		}
-		
+
 		if server == nil {
 			t.Fatal("Expected server to be created, got nil")
 		}
@@ -511,15 +511,15 @@ func TestServerSetupIntegration(t *testing.T) {
 	t.Run("server setup with all tools and prompts", func(t *testing.T) {
 		transport := createServerTransport()
 		server, err := setupServer(transport)
-		
+
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
-		
+
 		if server == nil {
 			t.Fatal("Expected server to be created, got nil")
 		}
-		
+
 		// Test that the server was properly configured
 		// This indirectly tests that all tools and prompts were registered successfully
 		// since setupServer would return an error if registration failed

@@ -91,9 +91,18 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 
 	// Check if we've asked all questions
 	if currentIndex >= len(shuffledQuestions) {
-		// Calculate final position
-		avgEconomicScore := totalEconomicScore / float64(questionCount)
-		avgSocialScore := totalSocialScore / float64(questionCount)
+		// Calculate final position using the same algorithm as pc.js
+		// Normalize scores: divide by 8.0 and 19.5 respectively
+		valE := totalEconomicScore / 8.0
+		valS := totalSocialScore / 19.5
+		
+		// Apply offsets (same as e0 and s0 in pc.js)
+		valE += 0.38
+		valS += 2.41
+		
+		// Round to 2 decimal places for consistency
+		avgEconomicScore := float64(int(valE*100+0.5)) / 100
+		avgSocialScore := float64(int(valS*100+0.5)) / 100
 
 		// Determine quadrant
 		var quadrant string

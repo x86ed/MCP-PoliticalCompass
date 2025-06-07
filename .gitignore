@@ -33,3 +33,9 @@ go.work.sum
 
 # executables
 ./cmd/cmd
+cmd/cmd
+/cmd
+
+# Build artifacts
+/dist/
+/build/

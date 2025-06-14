@@ -1,30 +1,55 @@
 # MCP-PoliticalCompass
 
-A Model Context Protocol (MCP) server that provides an interactive Political Compass quiz for baselining the political beliefs of AI agents and users. This server implements the complete Political Compass questionnaire with 62 questions across economic and social dimensions.
+A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements two comprehensive political questionnaires: the classic Political Compass (62 questions) and the detailed 8values quiz (70 questions).
 
 ## Overview
+
+This MCP server provides two distinct political assessment tools:
+
+### Political Compass Quiz
 
 The Political Compass is a multi-axis political model that maps political ideologies across two dimensions:
 
 - **Economic Axis**: Left (collectivist) to Right (individualist)
 - **Social Axis**: Libertarian (freedom-focused) to Authoritarian (order-focused)
 
-This MCP server allows AI agents to take the complete Political Compass quiz and receive a detailed analysis of their political positioning across four quadrants:
+Results place users in one of four quadrants:
 
 - **Libertarian Left** (Left-wing, freedom-oriented)
 - **Libertarian Right** (Right-wing, freedom-oriented)
 - **Authoritarian Left** (Left-wing, order-oriented)
 - **Authoritarian Right** (Right-wing, order-oriented)
 
+### 8values Quiz
+
+The 8values quiz provides a more detailed analysis across four political axes with 70 questions:
+
+- **Economic Axis**: Socialist (equality-focused) to Capitalist (market-focused)
+- **Diplomatic Axis**: Internationalist (globalist) to Nationalist (isolationist)
+- **Government Axis**: Libertarian (freedom-focused) to Authoritarian (order-focused)
+- **Society Axis**: Progressive (change-oriented) to Traditional (stability-focused)
+
+Each axis provides percentage scores and ideological classifications based on your responses.
+
 ## Features
 
 ### Tools Available
 
+#### Political Compass Tools
+
 - **`political_compass`**: Interactive quiz tool that presents randomized political questions
-- **`reset_quiz`**: Resets quiz progress to start fresh
-- **`quiz_status`**: Shows current quiz progress and statistics
+- **`reset_quiz`**: Resets Political Compass quiz progress to start fresh
+- **`quiz_status`**: Shows current Political Compass quiz progress and statistics
+
+#### 8values Tools
+
+- **`eight_values`**: Interactive 8values quiz tool with 70 questions across four political axes
+- **`reset_eight_values`**: Resets 8values quiz progress to start fresh
+- **`eight_values_status`**: Shows current 8values quiz progress and statistics
 
 ### Quiz Capabilities
+
+#### Political Compass Features
 
 - **62 authentic questions** from the Political Compass dataset
 - **Randomized question order** for each quiz session
@@ -32,9 +57,22 @@ This MCP server allows AI agents to take the complete Political Compass quiz and
 - **Response distribution analytics** showing breakdown by response type
 - **Authentic scoring algorithm** that matches the original Political Compass methodology
 - **Detailed final analysis** with quadrant placement and scores
-- **Interactive SVG visualization** of results on political compass grid
+- **Interactive SVG compass visualization** showing position on the classic political grid
+
+#### 8values Features
+
+- **70 comprehensive questions** covering four distinct political axes
+- **Randomized question order** for unbiased assessment
+- **Five response options**: Strongly Disagree, Disagree, Neutral, Agree, Strongly Agree
+- **Real-time progress tracking** with percentage completion
+- **Authentic 8values scoring algorithm** matching the original implementation
+- **Detailed axis analysis** with percentage scores and ideological classifications
+- **Interactive SVG bar chart visualization** showing position on all four axes
+- **Response distribution analytics** with comprehensive breakdown
 
 ### Visualization Features
+
+#### Political Compass Visualization
 
 - **Color-coded quadrants**: Each political quadrant has a distinct background color
 - **Position marker**: Red dot shows exact location on the political compass
@@ -42,35 +80,78 @@ This MCP server allows AI agents to take the complete Political Compass quiz and
 - **Coordinate display**: Shows precise numerical position (Economic, Social)
 - **Professional styling**: Clean, readable design suitable for analysis
 
+#### 8values Visualization
+
+- **Bar chart format**: Horizontal bars showing percentage scores for each axis
+- **Color-coded axes**: Each political axis has a distinct color scheme
+- **Percentage labels**: Clear numerical values for each axis score
+- **Ideological classifications**: Text labels showing political tendencies
+- **Professional styling**: Clean, modern design optimized for readability
+
 ### Example Interactions
 
-**Starting the quiz:**
+#### Political Compass Quiz
+
+**Starting the Political Compass quiz:**
 
 ```yaml
 Tool: political_compass
 Response: ""
 ```
 
-**Answering questions:**
+**Answering Political Compass questions:**
 
 ```yaml
 Tool: political_compass
-Response: "Strongly Agree"
+Response: "strongly_agree"
 ```
 
-**Checking quiz progress:**
+**Checking Political Compass progress:**
 
 ```yaml
 Tool: quiz_status
 ```
 
-**Quiz completion provides:**
+#### 8values Quiz
+
+**Starting the 8values quiz:**
+
+```yaml
+Tool: eight_values
+Response: ""
+```
+
+**Answering 8values questions:**
+
+```yaml
+Tool: eight_values
+Response: "agree"
+```
+
+**Checking 8values progress:**
+
+```yaml
+Tool: eight_values_status
+```
+
+### Quiz Results
+
+#### Political Compass completion provides:
 
 - Final Economic Score (e.g., -1.23)
 - Final Social Score (e.g., 2.45)
 - Political Quadrant placement
-- **Interactive SVG visualization** showing position on political compass grid
+- **Interactive SVG compass visualization** showing position on political grid
 - Total questions answered
+
+#### 8values completion provides:
+
+- Economic Axis percentage and classification (Socialist/Capitalist)
+- Diplomatic Axis percentage and classification (Internationalist/Nationalist)
+- Government Axis percentage and classification (Libertarian/Authoritarian)
+- Society Axis percentage and classification (Progressive/Traditional)
+- **Interactive SVG bar chart visualization** showing all four axis scores
+- Total questions answered and response distribution
 
 ## Installation & Setup
 
@@ -173,12 +254,18 @@ The build script creates compressed archives (.tar.gz for Unix-like systems, .zi
 ```markdown
 MCP-PoliticalCompass/
 ├── main.go                # Server setup and configuration
-├── tool.go                # Political compass quiz logic
+├── tool.go                # Political quiz logic (both compass and 8values)
 ├── *_test.go              # Comprehensive test suite
+├── 8values.js             # Reference implementation for 8values scoring
 ├── political-compass/     # Political compass data and interfaces
 │   ├── interface.go       # Question and response definitions
 │   ├── questions.go       # Complete dataset of 62 questions
 │   └── interface_test.go  # Data integrity tests
+├── eightvalues/           # 8values quiz data and interfaces
+│   ├── eightvalues.go     # Question definitions and constants
+│   └── questions.go       # Complete dataset of 70 questions
+├── politiscales/          # PolitiScales framework (future implementation)
+│   └── politiscales.go    # Basic structure definitions
 ├── go.mod                 # Go module definition
 ├── go.sum                 # Dependency checksums
 ├── VERSION                # Current version tracking
@@ -201,14 +288,16 @@ go tool cover -html=coverage.out -o coverage.html
 
 ### Test Coverage
 
-The project maintains **85.7% code coverage** with comprehensive testing:
+The project maintains **90.9% code coverage** with comprehensive testing:
 
-- **100% coverage** on all core business logic (`tool.go`)
-- **100% coverage** on data structures (`politicalcompass` package)
-- **50+ individual test cases** covering edge cases, boundary conditions, and error handling
-- **Integration tests** for complete quiz workflows
-- **SVG generation tests** for visualization features
-- **Quiz status functionality tests** for progress tracking
+- **100% coverage** on core business logic functions
+- **100% coverage** on data structures (`politicalcompass` and `eightvalues` packages)
+- **80+ individual test cases** covering edge cases, boundary conditions, and error handling
+- **Integration tests** for complete quiz workflows (both Political Compass and 8values)
+- **SVG generation tests** for both compass and bar chart visualizations
+- **Quiz status functionality tests** for progress tracking on both quiz types
+- **Edge case testing** for boundary conditions and error scenarios
+- **Complete quiz completion tests** ensuring full workflow integrity
 
 ### Key Dependencies
 
@@ -242,36 +331,6 @@ gh release create v2.1.0 dist/* --title "Release v2.1.0" --notes "Release notes 
 - Generates SHA256 checksums
 - Uploads artifacts to GitHub Releases
 
-## Algorithm Details
-
-### Scoring Methodology
-
-The server implements the authentic Political Compass scoring algorithm:
-
-1. **Response Mapping**:
-   - Strongly Disagree: Index 0
-   - Disagree: Index 1
-   - Agree: Index 2
-   - Strongly Agree: Index 3
-
-2. **Score Calculation**:
-   - Each question has Economic and Social score arrays `[4]float64`
-   - User response index determines which score to apply
-   - Scores accumulate across all 62 questions
-
-3. **Final Position Calculation**:
-
-   ```go
-   Economic Position = (Total Economic Score / 8.0) + 0.38
-   Social Position = (Total Social Score / 19.5) + 2.41
-   ```
-
-4. **Quadrant Determination**:
-   - Economic > 0, Social > 0: **Libertarian Left**
-   - Economic > 0, Social ≤ 0: **Authoritarian Left**
-   - Economic ≤ 0, Social > 0: **Libertarian Right**
-   - Economic ≤ 0, Social ≤ 0: **Authoritarian Right**
-
 ## API Reference
 
 ### political_compass Tool
@@ -304,14 +363,114 @@ The server implements the authentic Political Compass scoring algorithm:
 **Arguments**: None
 
 **Returns**: Tool response with:
+
 - Current progress (questions answered / total questions)
 - Progress percentage
 - Current economic and social scores (if in progress)
 - Response distribution statistics
 - Overall quiz state information
 
+### eight_values Tool
+
+**Purpose**: Present 8values questions and process responses across four political axes
+
+**Arguments**:
+
+- `response` (string, required): One of:
+  - `"strongly_disagree"`
+  - `"disagree"`
+  - `"neutral"`
+  - `"agree"`
+  - `"strongly_agree"`
+  - `""` (empty string to start quiz)
+
+**Returns**: Tool response with question text, progress, and current scores
+
+### reset_eight_values Tool
+
+**Purpose**: Reset 8values quiz progress to start fresh
+
+**Arguments**: None
+
+**Returns**: Confirmation message that 8values quiz has been reset
+
+### eight_values_status Tool
+
+**Purpose**: Display current 8values quiz progress and statistics
+
+**Arguments**: None
+
+**Returns**: Tool response with:
+
+- Current progress (questions answered / total questions)
+- Progress percentage
+- Current axis scores and classifications (if complete)
+- Response distribution statistics
+- Overall quiz state information
+
+## Algorithm Details
+
+### Political Compass Scoring Methodology
+
+The server implements the authentic Political Compass scoring algorithm:
+
+1. **Response Mapping**:
+   - Strongly Disagree: Index 0
+   - Disagree: Index 1
+   - Agree: Index 2
+   - Strongly Agree: Index 3
+
+2. **Score Calculation**:
+   - Each question has Economic and Social score arrays `[4]float64`
+   - User response index determines which score to apply
+   - Scores accumulate across all 62 questions
+
+3. **Final Position Calculation**:
+
+   ```go
+   Economic Position = (Total Economic Score / 8.0) + 0.38
+   Social Position = (Total Social Score / 19.5) + 2.41
+   ```
+
+4. **Quadrant Determination**:
+   - Economic > 0, Social > 0: **Libertarian Left**
+   - Economic > 0, Social ≤ 0: **Authoritarian Left**
+   - Economic ≤ 0, Social > 0: **Libertarian Right**
+   - Economic ≤ 0, Social ≤ 0: **Authoritarian Right**
+
+### 8values Scoring Methodology
+
+The server implements the authentic 8values scoring algorithm:
+
+1. **Response Mapping**:
+   - Strongly Disagree: -1.0
+   - Disagree: -0.5
+   - Neutral: 0.0
+   - Agree: 0.5
+   - Strongly Agree: 1.0
+
+2. **Score Calculation**:
+   - Each question has effect values for four axes: Economic, Diplomatic, Government, Society
+   - User response multiplier is applied to each effect value
+   - Scores accumulate across all 70 questions
+
+3. **Final Percentage Calculation**:
+
+   ```go
+   Axis Percentage = (100 * (Max + Score) / (2 * Max))
+   ```
+
+   Where `Max` is the maximum possible absolute score for that axis.
+
+4. **Classification Determination**:
+   - Economic > 50%: **Socialist**, ≤ 50%: **Capitalist**
+   - Diplomatic > 50%: **Internationalist**, ≤ 50%: **Nationalist**
+   - Government > 50%: **Libertarian**, ≤ 50%: **Authoritarian**
+   - Society > 50%: **Progressive**, ≤ 50%: **Traditional**
+
 ## Version History
 
+- **v2.3.0**: Added complete 8values quiz implementation with 70 questions, improved test coverage to 90.9%, and comprehensive SVG visualizations
 - **v2.2.0**: Added quiz status tool with progress tracking and thread safety improvements
 - **v1.0.5**: Added interactive SVG visualization for quiz results
 - **v1.0.4**: Fixed README.md markdown formatting issues
@@ -337,5 +496,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - Political Compass questions and methodology based on the original [Political Compass](https://www.politicalcompass.org/) project
+- 8values questions and methodology based on the original [8values](https://8values.github.io/) project
 - Built using the [Model Context Protocol](https://modelcontextprotocol.io/) specification
 - Powered by [mcp-golang](https://github.com/metoro-io/mcp-golang) SDK

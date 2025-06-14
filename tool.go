@@ -7,6 +7,7 @@ import (
 	"time"
 
 	mcp "github.com/metoro-io/mcp-golang"
+	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
 	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v2/political-compass"
 )
 
@@ -19,6 +20,16 @@ var (
 	shuffledQuestions  []int
 	currentIndex       = 0
 	quizState          = &QuizState{}
+
+	// 8values quiz state
+	eightValuesEconScore         = 0.0
+	eightValuesDiplScore         = 0.0
+	eightValuesGovtScore         = 0.0
+	eightValuesSctyScore         = 0.0
+	eightValuesQuestionCount     = 0
+	eightValuesShuffledQuestions []int
+	eightValuesCurrentIndex      = 0
+	eightValuesQuizState         = &EightValuesQuizState{}
 )
 
 // PoliticalCompassArgs represents the arguments for the political compass question tool
@@ -36,9 +47,27 @@ type QuizStatusArgs struct {
 	// No arguments needed for status
 }
 
+// 8Values tool argument types
+type EightValuesArgs struct {
+	Response string `json:"response" jsonschema:"required,description=Your response to the 8values question. Valid values: strongly_disagree, disagree, neutral, agree, strongly_agree"`
+}
+
+type ResetEightValuesArgs struct {
+	// No arguments needed for reset
+}
+
+type EightValuesStatusArgs struct {
+	// No arguments needed for status
+}
+
 // QuizState holds the current state of the quiz
 type QuizState struct {
 	Responses []politicalcompass.Response `json:"responses"`
+}
+
+// EightValuesQuizState holds the current state of the 8values quiz
+type EightValuesQuizState struct {
+	Responses []float64 `json:"responses"`
 }
 
 // Reset state helper function for tests
@@ -49,6 +78,9 @@ func resetState() {
 	shuffledQuestions = nil
 	currentIndex = 0
 	quizState = &QuizState{}
+
+	// Reset 8values state too
+	resetEightValuesState()
 }
 
 // Initialize shuffled question order
@@ -148,7 +180,7 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 			"%s\n\n"+
 			"**Instructions for displaying the results:**\n"+
 			"1. Show the above scores and quadrant information to the user\n"+
-			"2. Render the SVG chart above so the user can see their position visually\n"+
+			"2. Render the SVG chart above so the user can see their position visually. (it's inline markdown so an artifact may work best)\n"+
 			"3. The red dot on the chart shows your exact political position\n\n"+
 			"Thank you for completing the Political Compass quiz!",
 			questionCount, avgEconomicScore, avgSocialScore, quadrant, svg)
@@ -441,4 +473,419 @@ func getQuadrant(economic, social float64) string {
 	} else {
 		return "Authoritarian Left"
 	}
+}
+
+// 8VALUES QUIZ IMPLEMENTATION
+
+// Reset 8values state helper function
+func resetEightValuesState() {
+	eightValuesEconScore = 0.0
+	eightValuesDiplScore = 0.0
+	eightValuesGovtScore = 0.0
+	eightValuesSctyScore = 0.0
+	eightValuesQuestionCount = 0
+	eightValuesShuffledQuestions = nil
+	eightValuesCurrentIndex = 0
+	eightValuesQuizState = &EightValuesQuizState{}
+}
+
+// Initialize shuffled question order for 8values
+func initializeEightValuesQuestions() {
+	if len(eightValuesShuffledQuestions) == 0 {
+		eightValuesShuffledQuestions = make([]int, len(eightvalues.Questions))
+		for i := range eightValuesShuffledQuestions {
+			eightValuesShuffledQuestions[i] = i
+		}
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng.Shuffle(len(eightValuesShuffledQuestions), func(i, j int) {
+			eightValuesShuffledQuestions[i], eightValuesShuffledQuestions[j] = eightValuesShuffledQuestions[j], eightValuesShuffledQuestions[i]
+		})
+	}
+}
+
+// Handler function for 8values quiz tool
+func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Initialize questions if not done already
+	initializeEightValuesQuestions()
+
+	var question eightvalues.Question
+	var isFirstQuestion = false
+
+	// If this is a response to a previous question, process it first
+	if eightValuesQuestionCount > 0 {
+		// Get the last asked question to calculate scores
+		lastQuestionIndex := eightValuesShuffledQuestions[eightValuesCurrentIndex-1]
+		lastQuestion := eightvalues.Questions[lastQuestionIndex]
+
+		// Parse the response and get multiplier
+		var multiplier float64
+		switch args.Response {
+		case "strongly_disagree":
+			multiplier = eightvalues.StronglyDisagree
+		case "disagree":
+			multiplier = eightvalues.Disagree
+		case "neutral":
+			multiplier = eightvalues.Neutral
+		case "agree":
+			multiplier = eightvalues.Agree
+		case "strongly_agree":
+			multiplier = eightvalues.StronglyAgree
+		default:
+			return nil, fmt.Errorf("invalid response: %s. Please use one of: strongly_disagree, disagree, neutral, agree, strongly_agree", args.Response)
+		}
+
+		// Calculate and accumulate scores using the 8values scoring logic
+		// mult * questions[qn].effect.econ/dipl/govt/scty
+		eightValuesEconScore += multiplier * lastQuestion.Effect[eightvalues.Economic]
+		eightValuesDiplScore += multiplier * lastQuestion.Effect[eightvalues.Diplomatic]
+		eightValuesGovtScore += multiplier * lastQuestion.Effect[eightvalues.Government]
+		eightValuesSctyScore += multiplier * lastQuestion.Effect[eightvalues.Society]
+
+		// Record the response in quiz state
+		eightValuesQuizState.Responses = append(eightValuesQuizState.Responses, multiplier)
+	} else {
+		isFirstQuestion = true
+	}
+
+	// Check if we've asked all questions
+	if eightValuesCurrentIndex >= len(eightValuesShuffledQuestions) {
+		// Calculate maximum possible scores for each axis (like in 8values.js)
+		var maxEcon, maxDipl, maxGovt, maxScty float64
+		for _, q := range eightvalues.Questions {
+			maxEcon += abs(q.Effect[eightvalues.Economic])
+			maxDipl += abs(q.Effect[eightvalues.Diplomatic])
+			maxGovt += abs(q.Effect[eightvalues.Government])
+			maxScty += abs(q.Effect[eightvalues.Society])
+		}
+
+		// Calculate final scores using the 8values calc_score formula:
+		// (100*(max+score)/(2*max)).toFixed(1)
+		econPercentage := (100 * (maxEcon + eightValuesEconScore) / (2 * maxEcon))
+		diplPercentage := (100 * (maxDipl + eightValuesDiplScore) / (2 * maxDipl))
+		govtPercentage := (100 * (maxGovt + eightValuesGovtScore) / (2 * maxGovt))
+		sctyPercentage := (100 * (maxScty + eightValuesSctyScore) / (2 * maxScty))
+
+		// Determine ideological classifications
+		var economicLabel, diplomaticLabel, governmentLabel, societyLabel string
+
+		if econPercentage > 50 {
+			economicLabel = "Socialist"
+		} else {
+			economicLabel = "Capitalist"
+		}
+
+		if diplPercentage > 50 {
+			diplomaticLabel = "Internationalist"
+		} else {
+			diplomaticLabel = "Nationalist"
+		}
+
+		if govtPercentage > 50 {
+			governmentLabel = "Libertarian"
+		} else {
+			governmentLabel = "Authoritarian"
+		}
+
+		if sctyPercentage > 50 {
+			societyLabel = "Progressive"
+		} else {
+			societyLabel = "Traditional"
+		}
+
+		// Generate SVG graph showing the user's position on all four axes
+		svg := generateEightValuesSVG(econPercentage, diplPercentage, govtPercentage, sctyPercentage)
+
+		message := fmt.Sprintf("🎉 8values Political Quiz Complete!\n\n"+
+			"Questions answered: %d\n\n"+
+			"**Final Scores:**\n"+
+			"- Economic Axis: %.1f%% %s\n"+
+			"- Diplomatic Axis: %.1f%% %s\n"+
+			"- Government Axis: %.1f%% %s\n"+
+			"- Society Axis: %.1f%% %s\n\n"+
+			"**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n"+
+			"%s\n\n"+
+			"**Instructions for displaying the results:**\n"+
+			"1. Show the above scores and classifications to the user\n"+
+			"2. Render the SVG chart above so the user can see their position visually\n"+
+			"3. The chart shows your position on all four political axes\n\n"+
+			"Thank you for completing the 8values quiz!",
+			eightValuesQuestionCount,
+			econPercentage, economicLabel,
+			diplPercentage, diplomaticLabel,
+			govtPercentage, governmentLabel,
+			sctyPercentage, societyLabel,
+			svg)
+
+		return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	}
+
+	// Get the next question
+	questionIndex := eightValuesShuffledQuestions[eightValuesCurrentIndex]
+	question = eightvalues.Questions[questionIndex]
+	eightValuesCurrentIndex++
+	eightValuesQuestionCount++
+
+	var message string
+	if isFirstQuestion {
+		message = fmt.Sprintf("🗳️ 8values Political Quiz Started!\n\n"+
+			"Question %d of %d:\n%s\n\n"+
+			"Please respond with: strongly_disagree, disagree, neutral, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
+			eightValuesQuestionCount, len(eightvalues.Questions), question.Text)
+	} else {
+		message = fmt.Sprintf("✅ Response recorded!\n\n"+
+			"Progress: %d of %d questions completed\n\n"+
+			"Question %d of %d:\n%s\n\n"+
+			"Please respond with: strongly_disagree, disagree, neutral, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
+			eightValuesQuestionCount-1, len(eightvalues.Questions),
+			eightValuesQuestionCount, len(eightvalues.Questions), question.Text)
+	}
+
+	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+}
+
+// Handler function for reset 8values quiz tool
+func handleResetEightValues(args ResetEightValuesArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Reset all 8values quiz state
+	resetEightValuesState()
+
+	message := "🔄 8values Quiz Reset!\n\n" +
+		"All progress has been cleared. You can now start a fresh 8values quiz by calling the eight_values tool.\n\n" +
+		"Call the eight_values tool to begin a new quiz."
+
+	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+}
+
+// handleEightValuesStatus shows the current 8values quiz progress and statistics
+func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Get current state
+	totalQuestions := len(eightvalues.Questions)
+	answered := len(eightValuesQuizState.Responses)
+	remaining := totalQuestions - answered
+
+	// Calculate current scores if we have responses
+	var econScore, diplScore, govtScore, sctyScore float64
+	var econPercentage, diplPercentage, govtPercentage, sctyPercentage float64
+
+	if answered > 0 {
+		// Calculate scores manually based on stored responses
+		for i, response := range eightValuesQuizState.Responses {
+			if i < len(eightValuesShuffledQuestions) {
+				questionIndex := eightValuesShuffledQuestions[i]
+				question := eightvalues.Questions[questionIndex]
+				econScore += response * question.Effect[eightvalues.Economic]
+				diplScore += response * question.Effect[eightvalues.Diplomatic]
+				govtScore += response * question.Effect[eightvalues.Government]
+				sctyScore += response * question.Effect[eightvalues.Society]
+			}
+		}
+
+		// Calculate maximum possible scores for percentages
+		var maxEcon, maxDipl, maxGovt, maxScty float64
+		for _, q := range eightvalues.Questions {
+			maxEcon += abs(q.Effect[eightvalues.Economic])
+			maxDipl += abs(q.Effect[eightvalues.Diplomatic])
+			maxGovt += abs(q.Effect[eightvalues.Government])
+			maxScty += abs(q.Effect[eightvalues.Society])
+		}
+
+		// Calculate percentages
+		econPercentage = (100 * (maxEcon + econScore) / (2 * maxEcon))
+		diplPercentage = (100 * (maxDipl + diplScore) / (2 * maxDipl))
+		govtPercentage = (100 * (maxGovt + govtScore) / (2 * maxGovt))
+		sctyPercentage = (100 * (maxScty + sctyScore) / (2 * maxScty))
+	}
+
+	// Create detailed status report
+	statusText := fmt.Sprintf(`📊 **8values Quiz Status**
+
+**Progress:**
+- Questions answered: %d/%d
+- Questions remaining: %d
+- Completion: %.1f%%
+`, answered, totalQuestions, remaining,
+		float64(answered)/float64(totalQuestions)*100)
+
+	// Only show scores if quiz is complete
+	if remaining == 0 && answered > 0 {
+		// Determine ideological classifications
+		var economicLabel, diplomaticLabel, governmentLabel, societyLabel string
+
+		if econPercentage > 50 {
+			economicLabel = "Socialist"
+		} else {
+			economicLabel = "Capitalist"
+		}
+
+		if diplPercentage > 50 {
+			diplomaticLabel = "Internationalist"
+		} else {
+			diplomaticLabel = "Nationalist"
+		}
+
+		if govtPercentage > 50 {
+			governmentLabel = "Libertarian"
+		} else {
+			governmentLabel = "Authoritarian"
+		}
+
+		if sctyPercentage > 50 {
+			societyLabel = "Progressive"
+		} else {
+			societyLabel = "Traditional"
+		}
+
+		statusText += fmt.Sprintf(`
+**Final Scores:**
+- Economic Axis: %.1f%% %s
+- Diplomatic Axis: %.1f%% %s  
+- Government Axis: %.1f%% %s
+- Society Axis: %.1f%% %s
+`, econPercentage, economicLabel,
+			diplPercentage, diplomaticLabel,
+			govtPercentage, governmentLabel,
+			sctyPercentage, societyLabel)
+	}
+
+	statusText += "\n**Response Distribution:**\n"
+
+	// Add response distribution
+	responseCount := make(map[string]int)
+	for _, response := range eightValuesQuizState.Responses {
+		switch response {
+		case eightvalues.StronglyDisagree:
+			responseCount["Strongly Disagree"]++
+		case eightvalues.Disagree:
+			responseCount["Disagree"]++
+		case eightvalues.Neutral:
+			responseCount["Neutral"]++
+		case eightvalues.Agree:
+			responseCount["Agree"]++
+		case eightvalues.StronglyAgree:
+			responseCount["Strongly Agree"]++
+		}
+	}
+
+	responses := []string{"Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"}
+	for _, resp := range responses {
+		count := responseCount[resp]
+		if count > 0 {
+			percentage := float64(count) / float64(answered) * 100
+			statusText += fmt.Sprintf("- %s: %d (%.1f%%)\n", resp, count, percentage)
+		}
+	}
+
+	if answered == 0 {
+		statusText += "\n*No questions answered yet. Use the `eight_values` tool to start the quiz.*"
+	} else if remaining > 0 {
+		statusText += fmt.Sprintf("\n*Continue with the `eight_values` tool to answer %d more questions.*", remaining)
+	} else {
+		statusText += "\n*✅ Quiz complete! All questions have been answered.*"
+	}
+
+	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+}
+
+// generateEightValuesSVG creates an SVG visualization of the user's 8values position
+func generateEightValuesSVG(econPercentage, diplPercentage, govtPercentage, sctyPercentage float64) string {
+	// SVG dimensions
+	width := 500
+	height := 400
+	margin := 60
+	barHeight := 30
+	barSpacing := 80
+
+	svg := fmt.Sprintf(`<svg width="%d" height="%d" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="%d" height="%d" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+  
+  <!-- Title -->
+  <text x="%d" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">8values Political Results</text>
+  
+  <!-- Economic Axis -->
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Economic Axis</text>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#4CAF50"/>
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="10" fill="#333">Socialist</text>
+  <text x="%d" y="%d" text-anchor="end" font-family="Arial, sans-serif" font-size="10" fill="#333">Capitalist</text>
+  <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">%.1f%%</text>
+  
+  <!-- Diplomatic Axis -->
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Diplomatic Axis</text>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#2196F3"/>
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="10" fill="#333">Internationalist</text>
+  <text x="%d" y="%d" text-anchor="end" font-family="Arial, sans-serif" font-size="10" fill="#333">Nationalist</text>
+  <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">%.1f%%</text>
+  
+  <!-- Government Axis -->
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Government Axis</text>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#FF9800"/>
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="10" fill="#333">Libertarian</text>
+  <text x="%d" y="%d" text-anchor="end" font-family="Arial, sans-serif" font-size="10" fill="#333">Authoritarian</text>
+  <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">%.1f%%</text>
+  
+  <!-- Society Axis -->
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Society Axis</text>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
+  <rect x="%d" y="%d" width="%d" height="%d" fill="#9C27B0"/>
+  <text x="%d" y="%d" text-anchor="start" font-family="Arial, sans-serif" font-size="10" fill="#333">Progressive</text>
+  <text x="%d" y="%d" text-anchor="end" font-family="Arial, sans-serif" font-size="10" fill="#333">Traditional</text>
+  <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">%.1f%%</text>
+</svg>`,
+		width, height, // SVG dimensions
+		width, height, // Background
+		width/2, // Title x position
+
+		// Economic axis
+		margin, margin+15, // Label position
+		margin, margin+20, width-2*margin, barHeight, // Background bar
+		margin, margin+20, int(float64(width-2*margin)*econPercentage/100), barHeight, // Filled bar
+		margin, margin+45, // Socialist label
+		width-margin, margin+45, // Capitalist label
+		margin+int(float64(width-2*margin)/2), margin+37, econPercentage, // Percentage
+
+		// Diplomatic axis
+		margin, margin+barSpacing+15, // Label position
+		margin, margin+barSpacing+20, width-2*margin, barHeight, // Background bar
+		margin, margin+barSpacing+20, int(float64(width-2*margin)*diplPercentage/100), barHeight, // Filled bar
+		margin, margin+barSpacing+45, // Internationalist label
+		width-margin, margin+barSpacing+45, // Nationalist label
+		margin+int(float64(width-2*margin)/2), margin+barSpacing+37, diplPercentage, // Percentage
+
+		// Government axis
+		margin, margin+2*barSpacing+15, // Label position
+		margin, margin+2*barSpacing+20, width-2*margin, barHeight, // Background bar
+		margin, margin+2*barSpacing+20, int(float64(width-2*margin)*govtPercentage/100), barHeight, // Filled bar
+		margin, margin+2*barSpacing+45, // Libertarian label
+		width-margin, margin+2*barSpacing+45, // Authoritarian label
+		margin+int(float64(width-2*margin)/2), margin+2*barSpacing+37, govtPercentage, // Percentage
+
+		// Society axis
+		margin, margin+3*barSpacing+15, // Label position
+		margin, margin+3*barSpacing+20, width-2*margin, barHeight, // Background bar
+		margin, margin+3*barSpacing+20, int(float64(width-2*margin)*sctyPercentage/100), barHeight, // Filled bar
+		margin, margin+3*barSpacing+45, // Progressive label
+		width-margin, margin+3*barSpacing+45, // Traditional label
+		margin+int(float64(width-2*margin)/2), margin+3*barSpacing+37, sctyPercentage, // Percentage
+	)
+
+	return svg
 }

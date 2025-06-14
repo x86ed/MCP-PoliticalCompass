@@ -748,7 +748,7 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 
 	responseStrings := []string{
 		"Strongly Disagree",
-		"Disagree", 
+		"Disagree",
 		"Agree",
 		"Strongly Agree",
 	}
@@ -776,12 +776,12 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 
 		// Verify accumulated scores match expectations
 		if totalEconomicScore != expectedEconomicTotal {
-			t.Errorf("after question %d: expected economic total %f, got %f", 
+			t.Errorf("after question %d: expected economic total %f, got %f",
 				i+1, expectedEconomicTotal, totalEconomicScore)
 		}
 
 		if totalSocialScore != expectedSocialTotal {
-			t.Errorf("after question %d: expected social total %f, got %f", 
+			t.Errorf("after question %d: expected social total %f, got %f",
 				i+1, expectedSocialTotal, totalSocialScore)
 		}
 	}
@@ -802,26 +802,26 @@ func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
 
 		// Check that we don't exceed the bounds
 		if currentIndex > len(shuffledQuestions) {
-			t.Errorf("currentIndex %d exceeds shuffled questions length %d after question %d", 
+			t.Errorf("currentIndex %d exceeds shuffled questions length %d after question %d",
 				currentIndex, len(shuffledQuestions), i+1)
 		}
 	}
 
 	// Verify we have answered exactly 62 questions
 	if questionCount != len(politicalcompass.AllQuestions) {
-		t.Errorf("expected questionCount to be %d, got %d", 
+		t.Errorf("expected questionCount to be %d, got %d",
 			len(politicalcompass.AllQuestions), questionCount)
 	}
 
 	// Verify we have exactly 62 responses
 	if len(quizState.Responses) != len(politicalcompass.AllQuestions) {
-		t.Errorf("expected %d responses, got %d", 
+		t.Errorf("expected %d responses, got %d",
 			len(politicalcompass.AllQuestions), len(quizState.Responses))
 	}
 
 	// Verify currentIndex equals length (pointing past the end, indicating completion)
 	if currentIndex != len(shuffledQuestions) {
-		t.Errorf("expected currentIndex to be %d (length), got %d", 
+		t.Errorf("expected currentIndex to be %d (length), got %d",
 			len(shuffledQuestions), currentIndex)
 	}
 

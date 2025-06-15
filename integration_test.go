@@ -117,7 +117,9 @@ func TestIntegrationEdgeCases(t *testing.T) {
 
 		evStatus, _ := handleEightValuesStatus(EightValuesStatusArgs{})
 		evText := evStatus.Content[0].TextContent.Text
-		if !strings.Contains(evText, "Questions answered: 0/70") {
+		totalQuestions := len(EightValuesQuestions) // Dynamically derive total question count
+		expectedText := fmt.Sprintf("Questions answered: 0/%d", totalQuestions)
+		if !strings.Contains(evText, expectedText) {
 			t.Error("8values should be reset")
 		}
 	})

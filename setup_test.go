@@ -7,10 +7,7 @@ import (
 	stdio "github.com/metoro-io/mcp-golang/transport/stdio"
 )
 
-// MockTransport implements the Transport interface for testing
-type MockTransport struct {
-	transport.Transport
-}
+// Removed unused MockTransport struct to reduce dead code.
 
 func TestSetupServer(t *testing.T) {
 	// Test successful server setup

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -264,24 +265,62 @@ func TestPoliticalCompassScoreAccumulation(t *testing.T) {
 	// Start quiz
 	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 
+	// Test basic score accumulation by checking that after answering enough questions,
+	// at least one of the scores changes from 0.0
 	initialEconomic := totalEconomicScore
 	initialSocial := totalSocialScore
 
-	// Answer with "Agree" which should affect scores
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	// Answer a few questions with different responses
+	responses := []string{"Strongly Agree", "Agree", "Disagree", "Strongly Disagree"}
 
-	// Scores should have changed (unless the first question has all zeros, which is unlikely)
-	if totalEconomicScore == initialEconomic && totalSocialScore == initialSocial {
-		// This could happen if the first question has zero scores for "Agree"
-		// Let's check a few more questions to ensure score accumulation works
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Strongly Agree"})
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Disagree"})
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Strongly Disagree"})
+	for i := 0; i < 4 && currentIndex < len(shuffledQuestions); i++ {
+		response := responses[i%len(responses)]
+		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: response})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	}
 
-	// After answering several questions, at least one should have affected the scores
-	if questionCount > 1 && totalEconomicScore == 0.0 && totalSocialScore == 0.0 {
-		t.Error("expected some score accumulation after answering questions")
+	// After answering multiple questions, at least one score should have changed
+	// This tests that the scoring mechanism is working
+	if totalEconomicScore == initialEconomic && totalSocialScore == initialSocial {
+		// Check if we can find any question with non-zero effects to verify it's not just bad luck
+		hasNonZeroEffects := false
+		for _, q := range politicalcompass.AllQuestions {
+			for _, econ := range q.Economic {
+				if econ != 0 {
+					hasNonZeroEffects = true
+					break
+				}
+			}
+			if hasNonZeroEffects {
+				break
+			}
+			for _, social := range q.Social {
+				if social != 0 {
+					hasNonZeroEffects = true
+					break
+				}
+			}
+			if hasNonZeroEffects {
+				break
+			}
+		}
+
+		if hasNonZeroEffects {
+			t.Error("scores should have changed after answering questions, but both remained at initial values")
+		} else {
+			t.Skip("All questions have zero effects - data issue")
+		}
+	}
+
+	// Verify that scores are reasonable (not extreme values that would indicate a bug)
+	if totalEconomicScore < -1000 || totalEconomicScore > 1000 {
+		t.Errorf("economic score %f is unreasonably extreme", totalEconomicScore)
+	}
+
+	if totalSocialScore < -1000 || totalSocialScore > 1000 {
+		t.Errorf("social score %f is unreasonably extreme", totalSocialScore)
 	}
 }
 
@@ -748,7 +787,7 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 
 	responseStrings := []string{
 		"Strongly Disagree",
-		"Disagree", 
+		"Disagree",
 		"Agree",
 		"Strongly Agree",
 	}
@@ -776,12 +815,12 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 
 		// Verify accumulated scores match expectations
 		if totalEconomicScore != expectedEconomicTotal {
-			t.Errorf("after question %d: expected economic total %f, got %f", 
+			t.Errorf("after question %d: expected economic total %f, got %f",
 				i+1, expectedEconomicTotal, totalEconomicScore)
 		}
 
 		if totalSocialScore != expectedSocialTotal {
-			t.Errorf("after question %d: expected social total %f, got %f", 
+			t.Errorf("after question %d: expected social total %f, got %f",
 				i+1, expectedSocialTotal, totalSocialScore)
 		}
 	}
@@ -802,26 +841,26 @@ func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
 
 		// Check that we don't exceed the bounds
 		if currentIndex > len(shuffledQuestions) {
-			t.Errorf("currentIndex %d exceeds shuffled questions length %d after question %d", 
+			t.Errorf("currentIndex %d exceeds shuffled questions length %d after question %d",
 				currentIndex, len(shuffledQuestions), i+1)
 		}
 	}
 
 	// Verify we have answered exactly 62 questions
 	if questionCount != len(politicalcompass.AllQuestions) {
-		t.Errorf("expected questionCount to be %d, got %d", 
+		t.Errorf("expected questionCount to be %d, got %d",
 			len(politicalcompass.AllQuestions), questionCount)
 	}
 
 	// Verify we have exactly 62 responses
 	if len(quizState.Responses) != len(politicalcompass.AllQuestions) {
-		t.Errorf("expected %d responses, got %d", 
+		t.Errorf("expected %d responses, got %d",
 			len(politicalcompass.AllQuestions), len(quizState.Responses))
 	}
 
 	// Verify currentIndex equals length (pointing past the end, indicating completion)
 	if currentIndex != len(shuffledQuestions) {
-		t.Errorf("expected currentIndex to be %d (length), got %d", 
+		t.Errorf("expected currentIndex to be %d (length), got %d",
 			len(shuffledQuestions), currentIndex)
 	}
 
@@ -834,5 +873,233 @@ func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
 	content := response.Content[0].TextContent.Text
 	if !strings.Contains(content, "Political Compass Quiz Complete!") {
 		t.Error("should show completion message when trying to answer beyond 62 questions")
+	}
+}
+
+// TestQuizStatusEdgeCases tests specific edge cases to improve coverage
+func TestQuizStatusEdgeCases(t *testing.T) {
+	t.Run("StatusWithPartialProgress", func(t *testing.T) {
+		resetState()
+
+		// Start quiz and answer exactly half the questions
+		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+		halfQuestions := len(politicalcompass.AllQuestions) / 2
+		for i := 0; i < halfQuestions; i++ {
+			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "agree"})
+			if err != nil {
+				t.Fatalf("Unexpected error on question %d: %v", i+1, err)
+			}
+		}
+
+		statusArgs := QuizStatusArgs{}
+		response, err := handleQuizStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error getting status, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		// Should show partial progress
+		expectedAnswered := fmt.Sprintf("Questions answered: %d/%d", halfQuestions, len(politicalcompass.AllQuestions))
+		if !strings.Contains(text, expectedAnswered) {
+			t.Errorf("Expected '%s' in status, got: %s", expectedAnswered, text)
+		}
+
+		expectedRemaining := fmt.Sprintf("Questions remaining: %d", len(politicalcompass.AllQuestions)-halfQuestions)
+		if !strings.Contains(text, expectedRemaining) {
+			t.Errorf("Expected '%s' in status, got: %s", expectedRemaining, text)
+		}
+
+		// Should contain response distribution
+		if !strings.Contains(text, "Response Distribution:") {
+			t.Errorf("Expected response distribution section")
+		}
+
+		if !strings.Contains(text, "Agree:") {
+			t.Errorf("Expected 'Agree' responses in distribution")
+		}
+	})
+
+	t.Run("StatusWithMixedResponses", func(t *testing.T) {
+		resetState()
+
+		// Start quiz and give mixed responses to test all response types
+		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+		responses := []string{"strongly_disagree", "disagree", "agree", "strongly_agree"}
+		for i, resp := range responses {
+			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: resp})
+			if err != nil {
+				t.Fatalf("Unexpected error on question %d with response %s: %v", i+1, resp, err)
+			}
+		}
+
+		statusArgs := QuizStatusArgs{}
+		response, err := handleQuizStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error getting status, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		// Should show all response types in distribution
+		responseTypes := []string{"Strongly Disagree", "Disagree", "Agree", "Strongly Agree"}
+		for _, respType := range responseTypes {
+			if !strings.Contains(text, respType+": 1 (25.0%)") {
+				t.Errorf("Expected response type '%s' with count in distribution", respType)
+			}
+		}
+	})
+
+	t.Run("StatusWithNoQuestions", func(t *testing.T) {
+		resetState()
+
+		// Test status with completely empty state (no quiz started)
+		statusArgs := QuizStatusArgs{}
+		response, err := handleQuizStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		if !strings.Contains(text, "Questions answered: 0/") {
+			t.Errorf("Expected zero answered questions in status")
+		}
+
+		if !strings.Contains(text, "No questions answered yet") {
+			t.Errorf("Expected message about no questions answered")
+		}
+	})
+
+	t.Run("StatusWithCompletedQuizScores", func(t *testing.T) {
+		resetState()
+
+		// Complete entire quiz with known responses
+		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+		totalQuestions := len(politicalcompass.AllQuestions)
+		for i := 0; i < totalQuestions; i++ {
+			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "agree"})
+			if err != nil {
+				t.Fatalf("Unexpected error completing quiz: %v", err)
+			}
+		}
+
+		statusArgs := QuizStatusArgs{}
+		response, err := handleQuizStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error getting status, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		// Should show completion
+		if !strings.Contains(text, "Questions answered: "+fmt.Sprintf("%d/%d", totalQuestions, totalQuestions)) {
+			t.Errorf("Expected full completion in status")
+		}
+
+		if !strings.Contains(text, "Questions remaining: 0") {
+			t.Errorf("Expected no remaining questions")
+		}
+
+		if !strings.Contains(text, "Completion: 100.0%") {
+			t.Errorf("Expected 100%% completion")
+		}
+
+		// Should show final scores
+		if !strings.Contains(text, "Final Scores:") {
+			t.Errorf("Expected final scores section")
+		}
+
+		// Should show quadrant
+		quadrants := []string{"Libertarian Left", "Libertarian Right", "Authoritarian Left", "Authoritarian Right"}
+		foundQuadrant := false
+		for _, quadrant := range quadrants {
+			if strings.Contains(text, quadrant) {
+				foundQuadrant = true
+				break
+			}
+		}
+		if !foundQuadrant {
+			t.Errorf("Expected one of the quadrants to be mentioned")
+		}
+	})
+}
+
+// TestAbsAndGetQuadrantFunctions tests helper functions for complete coverage
+func TestAbsAndGetQuadrantFunctions(t *testing.T) {
+	t.Run("AbsFunction", func(t *testing.T) {
+		testCases := []struct {
+			input    float64
+			expected float64
+		}{
+			{5.0, 5.0},
+			{-5.0, 5.0},
+			{0.0, 0.0},
+			{-0.1, 0.1},
+			{100.5, 100.5},
+		}
+
+		for _, tc := range testCases {
+			result := abs(tc.input)
+			if result != tc.expected {
+				t.Errorf("abs(%.1f) = %.1f, expected %.1f", tc.input, result, tc.expected)
+			}
+		}
+	})
+
+	t.Run("GetQuadrantFunction", func(t *testing.T) {
+		testCases := []struct {
+			economic, social float64
+			expected         string
+		}{
+			{1.0, 1.0, "Libertarian Right"},    // economic > 0 && social > 0
+			{-1.0, 1.0, "Libertarian Left"},    // economic < 0 && social > 0
+			{1.0, -1.0, "Authoritarian Right"}, // economic > 0 && social < 0
+			{-1.0, -1.0, "Authoritarian Left"}, // economic < 0 && social < 0
+			{0.0, 0.1, "Authoritarian Left"},   // economic == 0 (not > 0), social > 0 -> goes to else
+			{0.1, 0.0, "Authoritarian Left"},   // economic > 0, social == 0 (not > 0) -> goes to else
+			{0.0, 0.0, "Authoritarian Left"},   // both == 0 -> goes to else
+		}
+
+		for _, tc := range testCases {
+			result := getQuadrant(tc.economic, tc.social)
+			if result != tc.expected {
+				t.Errorf("getQuadrant(%.1f, %.1f) = %s, expected %s",
+					tc.economic, tc.social, result, tc.expected)
+			}
+		}
+	})
+}
+
+// TestResponseVariations tests all response string variations
+func TestResponseVariations(t *testing.T) {
+	resetState()
+
+	// Test all valid response variations
+	responseVariations := [][]string{
+		{"Strongly Disagree", "strongly_disagree"},
+		{"Disagree", "disagree"},
+		{"Agree", "agree"},
+		{"Strongly Agree", "strongly_agree"},
+	}
+
+	for _, variations := range responseVariations {
+		for _, variation := range variations {
+			t.Run(variation, func(t *testing.T) {
+				resetState()
+
+				// Start quiz
+				handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+
+				// Test response variation
+				_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: variation})
+				if err != nil {
+					t.Errorf("Expected no error for response variation '%s', got: %v", variation, err)
+				}
+			})
+		}
 	}
 }

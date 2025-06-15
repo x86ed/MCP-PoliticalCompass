@@ -36,6 +36,24 @@ func setupServer(transport transport.Transport) (*mcp.Server, error) {
 		return nil, err
 	}
 
+	// Register 8values quiz tool
+	err = server.RegisterTool("eight_values", "Presents an 8values political question and accepts a response", handleEightValues)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register reset 8values quiz tool
+	err = server.RegisterTool("reset_eight_values", "Resets the 8values quiz progress", handleResetEightValues)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register 8values quiz status tool
+	err = server.RegisterTool("eight_values_status", "Shows current 8values quiz progress and statistics", handleEightValuesStatus)
+	if err != nil {
+		return nil, err
+	}
+
 	return server, nil
 }
 

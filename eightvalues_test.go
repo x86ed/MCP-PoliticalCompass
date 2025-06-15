@@ -244,7 +244,7 @@ func TestEightValuesSVGGeneration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			svg := generateEightValuesSVG(tc.econPercent, tc.diplPercent, tc.govtPercent, tc.sctyPercent)
+			svg := eightvalues.GenerateSVG(tc.econPercent, tc.diplPercent, tc.govtPercent, tc.sctyPercent)
 
 			for _, expectedTag := range tc.expectedTags {
 				if !strings.Contains(svg, expectedTag) {
@@ -736,7 +736,7 @@ func TestGenerateEightValuesSVGEdgeCases(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				svg := generateEightValuesSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
+				svg := eightvalues.GenerateSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
 
 				for _, label := range tc.expectedLabels {
 					if !strings.Contains(svg, label) {
@@ -782,7 +782,7 @@ func TestGenerateEightValuesSVGEdgeCases(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				svg := generateEightValuesSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
+				svg := eightvalues.GenerateSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
 
 				// Check if percentages are displayed based on thresholds
 				leftPercentagePattern := fmt.Sprintf("%.1f%%", tc.econ)
@@ -805,7 +805,7 @@ func TestGenerateEightValuesSVGEdgeCases(t *testing.T) {
 	})
 
 	t.Run("SVGElementsAndStructure", func(t *testing.T) {
-		svg := generateEightValuesSVG(50, 50, 50, 50)
+		svg := eightvalues.GenerateSVG(50, 50, 50, 50)
 
 		// Check for key SVG elements
 		expectedElements := []string{
@@ -837,7 +837,7 @@ func TestGenerateEightValuesSVGEdgeCases(t *testing.T) {
 
 // TestLabelFunctionEdgeCases tests the internal getLabel function edge cases
 func TestLabelFunctionEdgeCases(t *testing.T) {
-	// This tests the helper function inside generateEightValuesSVG by calling it indirectly
+	// This tests the helper function inside eightvalues.GenerateSVG by calling it indirectly
 	t.Run("BoundaryLabels", func(t *testing.T) {
 		// Test exact boundary values that trigger different labels
 		boundaryTests := []struct {
@@ -862,7 +862,7 @@ func TestLabelFunctionEdgeCases(t *testing.T) {
 
 		for _, test := range boundaryTests {
 			t.Run(fmt.Sprintf("Percentage_%.1f", test.percentage), func(t *testing.T) {
-				svg := generateEightValuesSVG(test.percentage, 50, 50, 50)
+				svg := eightvalues.GenerateSVG(test.percentage, 50, 50, 50)
 
 				// Skip test for values > 100 since they return empty string
 				if test.percentage > 100 {

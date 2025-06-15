@@ -724,31 +724,75 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 
 	// Only show scores if quiz is complete
 	if remaining == 0 && answered > 0 {
-		// Determine ideological classifications
+		// Determine ideological classifications using 8values setLabel logic
 		var economicLabel, diplomaticLabel, governmentLabel, societyLabel string
 
-		if econPercentage > 50 {
+		// Economic axis (equality-focused)
+		if econPercentage > 90 {
+			economicLabel = "Communist"
+		} else if econPercentage > 75 {
 			economicLabel = "Socialist"
-		} else {
+		} else if econPercentage > 60 {
+			economicLabel = "Social"
+		} else if econPercentage >= 40 {
+			economicLabel = "Centrist"
+		} else if econPercentage >= 25 {
+			economicLabel = "Market"
+		} else if econPercentage >= 10 {
 			economicLabel = "Capitalist"
+		} else {
+			economicLabel = "Laissez-Faire"
 		}
 
-		if diplPercentage > 50 {
+		// Diplomatic axis (peace-focused)
+		if diplPercentage > 90 {
+			diplomaticLabel = "Cosmopolitan"
+		} else if diplPercentage > 75 {
 			diplomaticLabel = "Internationalist"
-		} else {
+		} else if diplPercentage > 60 {
+			diplomaticLabel = "Peaceful"
+		} else if diplPercentage >= 40 {
+			diplomaticLabel = "Balanced"
+		} else if diplPercentage >= 25 {
+			diplomaticLabel = "Patriotic"
+		} else if diplPercentage >= 10 {
 			diplomaticLabel = "Nationalist"
+		} else {
+			diplomaticLabel = "Chauvinist"
 		}
 
-		if govtPercentage > 50 {
+		// Government axis (liberty-focused)
+		if govtPercentage > 90 {
+			governmentLabel = "Anarchist"
+		} else if govtPercentage > 75 {
 			governmentLabel = "Libertarian"
-		} else {
+		} else if govtPercentage > 60 {
+			governmentLabel = "Liberal"
+		} else if govtPercentage >= 40 {
+			governmentLabel = "Moderate"
+		} else if govtPercentage >= 25 {
+			governmentLabel = "Statist"
+		} else if govtPercentage >= 10 {
 			governmentLabel = "Authoritarian"
+		} else {
+			governmentLabel = "Totalitarian"
 		}
 
-		if sctyPercentage > 50 {
+		// Society axis (progress-focused)
+		if sctyPercentage > 90 {
+			societyLabel = "Revolutionary"
+		} else if sctyPercentage > 75 {
+			societyLabel = "Very Progressive"
+		} else if sctyPercentage > 60 {
 			societyLabel = "Progressive"
-		} else {
+		} else if sctyPercentage >= 40 {
+			societyLabel = "Neutral"
+		} else if sctyPercentage >= 25 {
 			societyLabel = "Traditional"
+		} else if sctyPercentage >= 10 {
+			societyLabel = "Very Traditional"
+		} else {
+			societyLabel = "Reactionary"
 		}
 
 		statusText += fmt.Sprintf(`
@@ -804,145 +848,159 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 
 // generateEightValuesSVG creates an SVG visualization of the user's 8values position
 func generateEightValuesSVG(econPercentage, diplPercentage, govtPercentage, sctyPercentage float64) string {
-	// SVG dimensions - increased for 8values style
-	width := 600
-	height := 500
-	margin := 50
-	barHeight := 36
-	axisSpacing := 100
-	iconSize := 32
-	barWidth := 320
+	// SVG dimensions - match 8values.js canvas size
+	width := 800
+	height := 650
 
-	// Calculate complementary percentages
+	// Calculate complementary percentages (following 8values.js logic)
 	wealthPercentage := 100 - econPercentage
 	mightPercentage := 100 - diplPercentage
 	authorityPercentage := 100 - govtPercentage
 	traditionPercentage := 100 - sctyPercentage
 
+	// Helper function to get ideological label (matches 8values setLabel function)
+	getLabel := func(val float64, labelArray []string) string {
+		if val > 100 {
+			return ""
+		} else if val > 90 {
+			return labelArray[0]
+		} else if val > 75 {
+			return labelArray[1]
+		} else if val > 60 {
+			return labelArray[2]
+		} else if val >= 40 {
+			return labelArray[3]
+		} else if val >= 25 {
+			return labelArray[4]
+		} else if val >= 10 {
+			return labelArray[5]
+		} else if val >= 0 {
+			return labelArray[6]
+		}
+		return ""
+	}
+
+	// Label arrays (from 8values.js)
+	econArray := []string{"Communist", "Socialist", "Social", "Centrist", "Market", "Capitalist", "Laissez-Faire"}
+	diplArray := []string{"Cosmopolitan", "Internationalist", "Peaceful", "Balanced", "Patriotic", "Nationalist", "Chauvinist"}
+	govtArray := []string{"Anarchist", "Libertarian", "Liberal", "Moderate", "Statist", "Authoritarian", "Totalitarian"}
+	sctyArray := []string{"Revolutionary", "Very Progressive", "Progressive", "Neutral", "Traditional", "Very Traditional", "Reactionary"}
+
+	// Get labels for each axis
+	economicLabel := getLabel(econPercentage, econArray)
+	diplomaticLabel := getLabel(diplPercentage, diplArray)
+	governmentLabel := getLabel(govtPercentage, govtArray)
+	societyLabel := getLabel(sctyPercentage, sctyArray)
+
 	svg := fmt.Sprintf(`<svg width="%d" height="%d" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="%d" height="%d" fill="#dddddd"/>
+  <rect width="%d" height="%d" fill="#EEEEEE"/>
   
   <!-- Title -->
-  <text x="%d" y="30" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="24" font-weight="bold" fill="#222222">8values</text>
-  <text x="%d" y="55" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="18" font-weight="normal" fill="#333333">Results</text>
+  <text x="20" y="90" text-anchor="start" font-family="Montserrat, sans-serif" font-size="80" font-weight="700" fill="#222222">8values</text>
   
-  <!-- Economic Axis -->
-  <text x="%d" y="%d" text-anchor="start" font-family="Montserrat, sans-serif" font-size="16" font-weight="normal" fill="#333333">Economic Axis: <tspan font-weight="300">Centrist</tspan></text>
-  <g transform="translate(%d, %d)">
-    <!-- Left Icon (Equality) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#f44336" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">⚖</text>
-    <!-- Economic Bars -->
-    <rect x="%d" y="%d" width="%.1f" height="%d" fill="#f44336" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="left" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#00897b" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="right" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <!-- Right Icon (Markets) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#00897b" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">💰</text>
-  </g>
+  <!-- Icons (positioned as in 8values.js) -->
+  <!-- Economic Icons -->
+  <rect x="20" y="170" width="100" height="100" fill="#f44336" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="70" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">⚖</text>
+  <rect x="680" y="170" width="100" height="100" fill="#00897b" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="730" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">💰</text>
   
-  <!-- Diplomatic Axis -->
-  <text x="%d" y="%d" text-anchor="start" font-family="Montserrat, sans-serif" font-size="16" font-weight="normal" fill="#333333">Diplomatic Axis: <tspan font-weight="300">Balanced</tspan></text>
-  <g transform="translate(%d, %d)">
-    <!-- Left Icon (Nation) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#ff9800" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">🏛</text>
-    <!-- Diplomatic Bars -->
-    <rect x="%d" y="%d" width="%.1f" height="%d" fill="#ff9800" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="left" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#03a9f4" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="right" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <!-- Right Icon (Globe) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#03a9f4" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">🌍</text>
-  </g>
+  <!-- Diplomatic Icons -->
+  <rect x="20" y="290" width="100" height="100" fill="#ff9800" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="70" y="355" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">🏛</text>
+  <rect x="680" y="290" width="100" height="100" fill="#03a9f4" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="730" y="355" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">🌍</text>
   
-  <!-- Government Axis -->
-  <text x="%d" y="%d" text-anchor="start" font-family="Montserrat, sans-serif" font-size="16" font-weight="normal" fill="#333333">Government Axis: <tspan font-weight="300">Moderate</tspan></text>
-  <g transform="translate(%d, %d)">
-    <!-- Left Icon (Liberty) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#ffeb3b" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222222">🗽</text>
-    <!-- Civil Bars -->
-    <rect x="%d" y="%d" width="%.1f" height="%d" fill="#ffeb3b" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="left" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#3f51b5" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="right" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <!-- Right Icon (Authority) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#3f51b5" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">⚔</text>
-  </g>
+  <!-- Government Icons -->
+  <rect x="20" y="410" width="100" height="100" fill="#ffeb3b" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="70" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#222222">🗽</text>
+  <rect x="680" y="410" width="100" height="100" fill="#3f51b5" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="730" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">⚔</text>
   
-  <!-- Society Axis -->
-  <text x="%d" y="%d" text-anchor="start" font-family="Montserrat, sans-serif" font-size="16" font-weight="normal" fill="#333333">Society Axis: <tspan font-weight="300">Neutral</tspan></text>
-  <g transform="translate(%d, %d)">
-    <!-- Left Icon (Tradition) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#8bc34a" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">🏛</text>
-    <!-- Societal Bars -->
-    <rect x="%d" y="%d" width="%.1f" height="%d" fill="#8bc34a" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="left" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#9c27b0" stroke="#222222" stroke-width="2"/>
-    <text x="%.1f" y="%d" text-anchor="right" font-family="Montserrat, sans-serif" font-size="14" fill="#222222">%.1f%%</text>
-    <!-- Right Icon (Progress) -->
-    <circle cx="%d" cy="%d" r="%d" fill="#9c27b0" stroke="#222222" stroke-width="2"/>
-    <text x="%d" y="%d" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">⚡</text>
-  </g>
-</svg>`,
-		width, height, // SVG dimensions
-		width, height, // Background
-		width/2, // Title x position
-		width/2, // Results text x position
+  <!-- Society Icons -->
+  <rect x="20" y="530" width="100" height="100" fill="#8bc34a" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="70" y="595" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">🏛</text>
+  <rect x="680" y="530" width="100" height="100" fill="#9c27b0" stroke="#222222" stroke-width="2" rx="10"/>
+  <text x="730" y="595" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white">⚡</text>
+  
+  <!-- Background bars (black) -->
+  <rect x="120" y="180" width="560" height="80" fill="#222222"/>
+  <rect x="120" y="300" width="560" height="80" fill="#222222"/>
+  <rect x="120" y="420" width="560" height="80" fill="#222222"/>
+  <rect x="120" y="540" width="560" height="80" fill="#222222"/>
+  
+  <!-- Left-side bars (equality, might, liberty, tradition) -->
+  <rect x="120" y="184" width="%.1f" height="72" fill="#f44336"/>
+  <rect x="120" y="304" width="%.1f" height="72" fill="#ff9800"/>
+  <rect x="120" y="424" width="%.1f" height="72" fill="#ffeb3b"/>
+  <rect x="120" y="544" width="%.1f" height="72" fill="#8bc34a"/>
+  
+  <!-- Right-side bars (wealth, peace, authority, progress) -->
+  <rect x="%.1f" y="184" width="%.1f" height="72" fill="#00897b"/>
+  <rect x="%.1f" y="304" width="%.1f" height="72" fill="#03a9f4"/>
+  <rect x="%.1f" y="424" width="%.1f" height="72" fill="#3f51b5"/>
+  <rect x="%.1f" y="544" width="%.1f" height="72" fill="#9c27b0"/>
+  
+  <!-- Left-side percentage text (only if > 30%%) -->`,
+		width, height, width, height,
+		// Left bars (equality, might, liberty, tradition)
+		5.6*econPercentage-2,      // equality bar width
+		5.6*mightPercentage-2,     // might bar width
+		5.6*govtPercentage-2,      // liberty bar width
+		5.6*traditionPercentage-2, // tradition bar width
+		// Right bars positioning and widths (wealth, peace, authority, progress)
+		682-5.6*wealthPercentage, 5.6*wealthPercentage-2, // wealth bar
+		682-5.6*diplPercentage, 5.6*diplPercentage-2, // peace bar
+		682-5.6*authorityPercentage, 5.6*authorityPercentage-2, // authority bar
+		682-5.6*sctyPercentage, 5.6*sctyPercentage-2) // progress bar
 
-		// Economic Axis
-		margin, 90, // Label position
-		margin, 100, // Group translation
-		iconSize/2, barHeight/2, iconSize/2, // Left icon (equality)
-		iconSize/2, barHeight/2+5, // Icon text position
-		iconSize+10, 0, econPercentage*float64(barWidth)/100, barHeight, // Left bar (equality)
-		(econPercentage*float64(barWidth)/100)/2+float64(iconSize+10), barHeight/2+5, econPercentage, // Left bar percentage text
-		float64(iconSize+10)+econPercentage*float64(barWidth)/100, 0, wealthPercentage*float64(barWidth)/100, barHeight, // Right bar (wealth)
-		float64(iconSize+10)+econPercentage*float64(barWidth)/100+wealthPercentage*float64(barWidth)/100, barHeight/2+5, wealthPercentage, // Right bar percentage text
-		iconSize+10+barWidth+iconSize/2, barHeight/2, iconSize/2, // Right icon (markets)
-		iconSize+10+barWidth+iconSize/2, barHeight/2+5, // Right icon text
+	// Add percentage text (only if > 30% as in 8values.js)
+	if econPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="130" y="237.5" text-anchor="start" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, econPercentage)
+	}
+	if mightPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="130" y="357.5" text-anchor="start" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, mightPercentage)
+	}
+	if govtPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="130" y="477.5" text-anchor="start" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, govtPercentage)
+	}
+	if traditionPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="130" y="597.5" text-anchor="start" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, traditionPercentage)
+	}
+	if wealthPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="670" y="237.5" text-anchor="end" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, wealthPercentage)
+	}
+	if diplPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="670" y="357.5" text-anchor="end" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, diplPercentage)
+	}
+	if authorityPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="670" y="477.5" text-anchor="end" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, authorityPercentage)
+	}
+	if sctyPercentage > 30 {
+		svg += fmt.Sprintf(`
+  <text x="670" y="597.5" text-anchor="end" font-family="Montserrat, sans-serif" font-size="50" fill="#222222">%.1f%%</text>`, sctyPercentage)
+	}
 
-		// Diplomatic Axis
-		margin, 90+axisSpacing, // Label position
-		margin, 100+axisSpacing, // Group translation
-		iconSize/2, barHeight/2, iconSize/2, // Left icon (nation)
-		iconSize/2, barHeight/2+5, // Icon text position
-		iconSize+10, 0, mightPercentage*float64(barWidth)/100, barHeight, // Left bar (might)
-		(mightPercentage*float64(barWidth)/100)/2+float64(iconSize+10), barHeight/2+5, mightPercentage, // Left bar percentage text
-		float64(iconSize+10)+mightPercentage*float64(barWidth)/100, 0, diplPercentage*float64(barWidth)/100, barHeight, // Right bar (peace)
-		float64(iconSize+10)+mightPercentage*float64(barWidth)/100+diplPercentage*float64(barWidth)/100, barHeight/2+5, diplPercentage, // Right bar percentage text
-		iconSize+10+barWidth+iconSize/2, barHeight/2, iconSize/2, // Right icon (globe)
-		iconSize+10+barWidth+iconSize/2, barHeight/2+5, // Right icon text
-
-		// Civil Axis
-		margin, 90+2*axisSpacing, // Label position
-		margin, 100+2*axisSpacing, // Group translation
-		iconSize/2, barHeight/2, iconSize/2, // Left icon (liberty)
-		iconSize/2, barHeight/2+5, // Icon text position
-		iconSize+10, 0, govtPercentage*float64(barWidth)/100, barHeight, // Left bar (liberty)
-		(govtPercentage*float64(barWidth)/100)/2+float64(iconSize+10), barHeight/2+5, govtPercentage, // Left bar percentage text
-		float64(iconSize+10)+govtPercentage*float64(barWidth)/100, 0, authorityPercentage*float64(barWidth)/100, barHeight, // Right bar (authority)
-		float64(iconSize+10)+govtPercentage*float64(barWidth)/100+authorityPercentage*float64(barWidth)/100, barHeight/2+5, authorityPercentage, // Right bar percentage text
-		iconSize+10+barWidth+iconSize/2, barHeight/2, iconSize/2, // Right icon (authority)
-		iconSize+10+barWidth+iconSize/2, barHeight/2+5, // Right icon text
-
-		// Societal Axis
-		margin, 90+3*axisSpacing, // Label position
-		margin, 100+3*axisSpacing, // Group translation
-		iconSize/2, barHeight/2, iconSize/2, // Left icon (tradition)
-		iconSize/2, barHeight/2+5, // Icon text position
-		iconSize+10, 0, traditionPercentage*float64(barWidth)/100, barHeight, // Left bar (tradition)
-		(traditionPercentage*float64(barWidth)/100)/2+float64(iconSize+10), barHeight/2+5, traditionPercentage, // Left bar percentage text
-		float64(iconSize+10)+traditionPercentage*float64(barWidth)/100, 0, sctyPercentage*float64(barWidth)/100, barHeight, // Right bar (progress)
-		float64(iconSize+10)+traditionPercentage*float64(barWidth)/100+sctyPercentage*float64(barWidth)/100, barHeight/2+5, sctyPercentage, // Right bar percentage text
-		iconSize+10+barWidth+iconSize/2, barHeight/2, iconSize/2, // Right icon (progress)
-		iconSize+10+barWidth+iconSize/2, barHeight/2+5) // Right icon text
+	// Add axis labels
+	svg += fmt.Sprintf(`
+  
+  <!-- Axis Labels -->
+  <text x="400" y="175" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="30" font-weight="300" fill="#222222">Economic Axis: %s</text>
+  <text x="400" y="295" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="30" font-weight="300" fill="#222222">Diplomatic Axis: %s</text>
+  <text x="400" y="415" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="30" font-weight="300" fill="#222222">Government Axis: %s</text>
+  <text x="400" y="535" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="30" font-weight="300" fill="#222222">Society Axis: %s</text>
+  
+  <!-- Attribution -->
+  <text x="780" y="60" text-anchor="end" font-family="Montserrat, sans-serif" font-size="30" font-weight="300" fill="#222222">8values.github.io</text>
+</svg>`, economicLabel, diplomaticLabel, governmentLabel, societyLabel)
 
 	return svg
 }

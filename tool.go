@@ -845,5 +845,3 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 
 	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
 }
-
-

@@ -602,3 +602,281 @@ func TestEightValuesEdgeCases(t *testing.T) {
 		}
 	})
 }
+
+// TestEightValuesStatusEdgeCases tests specific edge cases to improve coverage
+func TestEightValuesStatusEdgeCases(t *testing.T) {
+	t.Run("StatusWithZeroResponses", func(t *testing.T) {
+		resetState()
+
+		// Test status with completely empty state
+		statusArgs := EightValuesStatusArgs{}
+		response, err := handleEightValuesStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+		if !strings.Contains(text, "Questions answered: 0/70") {
+			t.Errorf("Expected zero answered questions in status")
+		}
+		if !strings.Contains(text, "No questions answered yet") {
+			t.Errorf("Expected message about no questions answered")
+		}
+	})
+
+	t.Run("StatusWithExtremeScores", func(t *testing.T) {
+		resetState()
+
+		// Manually set up quiz state with extreme responses to test all label branches
+		eightValuesQuizState.Responses = make([]float64, 70)
+		eightValuesShuffledQuestions = make([]int, 70)
+		for i := 0; i < 70; i++ {
+			eightValuesShuffledQuestions[i] = i
+			// Use extreme responses to trigger different label cases
+			if i < 35 {
+				eightValuesQuizState.Responses[i] = eightvalues.StronglyAgree // +1
+			} else {
+				eightValuesQuizState.Responses[i] = eightvalues.StronglyDisagree // -1
+			}
+		}
+
+		statusArgs := EightValuesStatusArgs{}
+		response, err := handleEightValuesStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		// Should show final scores
+		if !strings.Contains(text, "Final Scores:") {
+			t.Errorf("Expected final scores section in completed quiz status")
+		}
+
+		// Should contain ideological labels
+		ideologicalLabels := []string{
+			"Communist", "Socialist", "Social", "Centrist", "Market", "Capitalist", "Laissez-Faire",
+			"Cosmopolitan", "Internationalist", "Peaceful", "Balanced", "Patriotic", "Nationalist", "Chauvinist",
+			"Anarchist", "Libertarian", "Liberal", "Moderate", "Statist", "Authoritarian", "Totalitarian",
+			"Revolutionary", "Very Progressive", "Progressive", "Neutral", "Traditional", "Very Traditional", "Reactionary",
+		}
+
+		foundLabel := false
+		for _, label := range ideologicalLabels {
+			if strings.Contains(text, label) {
+				foundLabel = true
+				break
+			}
+		}
+		if !foundLabel {
+			t.Errorf("Expected at least one ideological label in status with completed quiz")
+		}
+	})
+
+	t.Run("StatusWithAllResponseTypes", func(t *testing.T) {
+		resetState()
+
+		// Set up responses with all different types to test response distribution
+		eightValuesQuizState.Responses = []float64{
+			eightvalues.StronglyDisagree,
+			eightvalues.Disagree,
+			eightvalues.Neutral,
+			eightvalues.Agree,
+			eightvalues.StronglyAgree,
+		}
+
+		statusArgs := EightValuesStatusArgs{}
+		response, err := handleEightValuesStatus(statusArgs)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		text := response.Content[0].TextContent.Text
+
+		// Should show all response types in distribution
+		responseTypes := []string{"Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"}
+		for _, respType := range responseTypes {
+			if !strings.Contains(text, respType+": 1 (20.0%)") {
+				t.Errorf("Expected response type '%s' with 1 count in distribution", respType)
+			}
+		}
+	})
+}
+
+// TestGenerateEightValuesSVGEdgeCases tests edge cases in SVG generation
+func TestGenerateEightValuesSVGEdgeCases(t *testing.T) {
+	t.Run("ExtremePercentages", func(t *testing.T) {
+		// Test with percentages that should trigger different label paths
+		testCases := []struct {
+			name                   string
+			econ, dipl, govt, scty float64
+			expectedLabels         []string
+		}{
+			{
+				name: "AllCommunist",
+				econ: 95, dipl: 95, govt: 95, scty: 95,
+				expectedLabels: []string{"Communist", "Cosmopolitan", "Anarchist", "Revolutionary"},
+			},
+			{
+				name: "AllCapitalist",
+				econ: 5, dipl: 5, govt: 5, scty: 5,
+				expectedLabels: []string{"Laissez-Faire", "Chauvinist", "Totalitarian", "Reactionary"},
+			},
+			{
+				name: "MixedExtreme",
+				econ: 85, dipl: 15, govt: 65, scty: 35,
+				expectedLabels: []string{"Socialist", "Nationalist", "Liberal", "Traditional"},
+			},
+			{
+				name: "BoundaryValues",
+				econ: 40, dipl: 25, govt: 10, scty: 91, // Changed to 91 to trigger > 90 condition
+				expectedLabels: []string{"Centrist", "Patriotic", "Authoritarian", "Revolutionary"},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				svg := generateEightValuesSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
+
+				for _, label := range tc.expectedLabels {
+					if !strings.Contains(svg, label) {
+						t.Errorf("Expected SVG to contain label '%s' for case %s", label, tc.name)
+					}
+				}
+
+				// Verify SVG structure
+				if !strings.Contains(svg, "<svg") || !strings.Contains(svg, "</svg>") {
+					t.Errorf("Invalid SVG structure for case %s", tc.name)
+				}
+			})
+		}
+	})
+
+	t.Run("PercentageDisplayThresholds", func(t *testing.T) {
+		// Test percentage display thresholds (should only show if > 30%)
+		testCases := []struct {
+			name                   string
+			econ, dipl, govt, scty float64
+			shouldShowLeftSide     bool
+			shouldShowRightSide    bool
+		}{
+			{
+				name: "BelowThreshold",
+				econ: 25, dipl: 25, govt: 25, scty: 25, // Below 30% threshold
+				shouldShowLeftSide:  false,
+				shouldShowRightSide: true, // Right side = 100-25 = 75%
+			},
+			{
+				name: "AboveThreshold",
+				econ: 35, dipl: 35, govt: 35, scty: 35, // Above 30% threshold
+				shouldShowLeftSide:  true,
+				shouldShowRightSide: true, // Right side = 100-35 = 65%
+			},
+			{
+				name: "ExactThreshold",
+				econ: 30, dipl: 30, govt: 30, scty: 30, // Exactly 30%
+				shouldShowLeftSide:  false, // Should be false for exactly 30%
+				shouldShowRightSide: true,  // Right side = 100-30 = 70%
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				svg := generateEightValuesSVG(tc.econ, tc.dipl, tc.govt, tc.scty)
+
+				// Check if percentages are displayed based on thresholds
+				leftPercentagePattern := fmt.Sprintf("%.1f%%", tc.econ)
+				rightPercentagePattern := fmt.Sprintf("%.1f%%", 100-tc.econ)
+
+				containsLeftPercentage := strings.Contains(svg, leftPercentagePattern)
+				containsRightPercentage := strings.Contains(svg, rightPercentagePattern)
+
+				if tc.shouldShowLeftSide != containsLeftPercentage {
+					t.Errorf("Case %s: expected left side percentage display: %v, got: %v",
+						tc.name, tc.shouldShowLeftSide, containsLeftPercentage)
+				}
+
+				if tc.shouldShowRightSide != containsRightPercentage {
+					t.Errorf("Case %s: expected right side percentage display: %v, got: %v",
+						tc.name, tc.shouldShowRightSide, containsRightPercentage)
+				}
+			})
+		}
+	})
+
+	t.Run("SVGElementsAndStructure", func(t *testing.T) {
+		svg := generateEightValuesSVG(50, 50, 50, 50)
+
+		// Check for key SVG elements
+		expectedElements := []string{
+			"<svg width=\"800\" height=\"650\"",
+			"<rect", // Background and bars
+			"<text", // Labels and percentages
+			"Economic Axis:",
+			"Diplomatic Axis:",
+			"Government Axis:",
+			"Society Axis:",
+			"8values.github.io", // Attribution
+			"#f44336",           // Economic left color
+			"#00897b",           // Economic right color
+			"#ff9800",           // Diplomatic left color
+			"#03a9f4",           // Diplomatic right color
+			"#ffeb3b",           // Government left color
+			"#3f51b5",           // Government right color
+			"#8bc34a",           // Society left color
+			"#9c27b0",           // Society right color
+		}
+
+		for _, element := range expectedElements {
+			if !strings.Contains(svg, element) {
+				t.Errorf("Expected SVG to contain element: %s", element)
+			}
+		}
+	})
+}
+
+// TestLabelFunctionEdgeCases tests the internal getLabel function edge cases
+func TestLabelFunctionEdgeCases(t *testing.T) {
+	// This tests the helper function inside generateEightValuesSVG by calling it indirectly
+	t.Run("BoundaryLabels", func(t *testing.T) {
+		// Test exact boundary values that trigger different labels
+		boundaryTests := []struct {
+			percentage    float64
+			expectedInSVG string
+		}{
+			{100.1, ""},            // > 100 should return empty string, so SVG will show a different fallback
+			{90.1, "Communist"},    // > 90
+			{90.0, "Socialist"},    // = 90, should be <= 90 branch
+			{75.1, "Socialist"},    // > 75
+			{75.0, "Social"},       // = 75, should be <= 75 branch
+			{60.1, "Social"},       // > 60
+			{60.0, "Centrist"},     // = 60, should be <= 60 branch
+			{40.0, "Centrist"},     // >= 40
+			{39.9, "Market"},       // < 40, >= 25
+			{25.0, "Market"},       // >= 25
+			{24.9, "Capitalist"},   // < 25, >= 10
+			{10.0, "Capitalist"},   // >= 10
+			{9.9, "Laissez-Faire"}, // < 10
+			{0.0, "Laissez-Faire"}, // >= 0
+		}
+
+		for _, test := range boundaryTests {
+			t.Run(fmt.Sprintf("Percentage_%.1f", test.percentage), func(t *testing.T) {
+				svg := generateEightValuesSVG(test.percentage, 50, 50, 50)
+
+				// Skip test for values > 100 since they return empty string
+				if test.percentage > 100 {
+					// Just verify SVG was generated successfully
+					if !strings.Contains(svg, "<svg") {
+						t.Errorf("Expected valid SVG for percentage %.1f", test.percentage)
+					}
+					return
+				}
+
+				if !strings.Contains(svg, test.expectedInSVG) {
+					t.Errorf("Expected SVG to contain '%s' for percentage %.1f", test.expectedInSVG, test.percentage)
+				}
+			})
+		}
+	})
+}

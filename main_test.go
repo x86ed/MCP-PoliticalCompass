@@ -265,24 +265,62 @@ func TestPoliticalCompassScoreAccumulation(t *testing.T) {
 	// Start quiz
 	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
 
+	// Test basic score accumulation by checking that after answering enough questions,
+	// at least one of the scores changes from 0.0
 	initialEconomic := totalEconomicScore
 	initialSocial := totalSocialScore
 
-	// Answer with "Agree" which should affect scores
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	// Answer a few questions with different responses
+	responses := []string{"Strongly Agree", "Agree", "Disagree", "Strongly Disagree"}
 
-	// Scores should have changed (unless the first question has all zeros, which is unlikely)
-	if totalEconomicScore == initialEconomic && totalSocialScore == initialSocial {
-		// This could happen if the first question has zero scores for "Agree"
-		// Let's check a few more questions to ensure score accumulation works
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Strongly Agree"})
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Disagree"})
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Strongly Disagree"})
+	for i := 0; i < 4 && currentIndex < len(shuffledQuestions); i++ {
+		response := responses[i%len(responses)]
+		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: response})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	}
 
-	// After answering several questions, at least one should have affected the scores
-	if questionCount > 1 && totalEconomicScore == 0.0 && totalSocialScore == 0.0 {
-		t.Error("expected some score accumulation after answering questions")
+	// After answering multiple questions, at least one score should have changed
+	// This tests that the scoring mechanism is working
+	if totalEconomicScore == initialEconomic && totalSocialScore == initialSocial {
+		// Check if we can find any question with non-zero effects to verify it's not just bad luck
+		hasNonZeroEffects := false
+		for _, q := range politicalcompass.AllQuestions {
+			for _, econ := range q.Economic {
+				if econ != 0 {
+					hasNonZeroEffects = true
+					break
+				}
+			}
+			if hasNonZeroEffects {
+				break
+			}
+			for _, social := range q.Social {
+				if social != 0 {
+					hasNonZeroEffects = true
+					break
+				}
+			}
+			if hasNonZeroEffects {
+				break
+			}
+		}
+
+		if hasNonZeroEffects {
+			t.Error("scores should have changed after answering questions, but both remained at initial values")
+		} else {
+			t.Skip("All questions have zero effects - data issue")
+		}
+	}
+
+	// Verify that scores are reasonable (not extreme values that would indicate a bug)
+	if totalEconomicScore < -1000 || totalEconomicScore > 1000 {
+		t.Errorf("economic score %f is unreasonably extreme", totalEconomicScore)
+	}
+
+	if totalSocialScore < -1000 || totalSocialScore > 1000 {
+		t.Errorf("social score %f is unreasonably extreme", totalSocialScore)
 	}
 }
 

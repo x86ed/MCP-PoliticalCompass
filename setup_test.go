@@ -3,7 +3,6 @@ package main
 import (
 	"testing"
 
-	"github.com/metoro-io/mcp-golang/transport"
 	stdio "github.com/metoro-io/mcp-golang/transport/stdio"
 )
 

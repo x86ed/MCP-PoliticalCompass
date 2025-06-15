@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
 )
 
 func TestToolHandlersDirectly(t *testing.T) {
@@ -117,7 +120,7 @@ func TestIntegrationEdgeCases(t *testing.T) {
 
 		evStatus, _ := handleEightValuesStatus(EightValuesStatusArgs{})
 		evText := evStatus.Content[0].TextContent.Text
-		totalQuestions := len(EightValuesQuestions) // Dynamically derive total question count
+		totalQuestions := len(eightvalues.Questions) // Dynamically derive total question count
 		expectedText := fmt.Sprintf("Questions answered: 0/%d", totalQuestions)
 		if !strings.Contains(evText, expectedText) {
 			t.Error("8values should be reset")

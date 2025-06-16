@@ -9,6 +9,7 @@ import (
 	mcp "github.com/metoro-io/mcp-golang"
 	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
 	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v2/political-compass"
+	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
 )
 
 // Global state to track the quiz progress
@@ -30,6 +31,14 @@ var (
 	eightValuesShuffledQuestions []int
 	eightValuesCurrentIndex      = 0
 	eightValuesQuizState         = &EightValuesQuizState{}
+
+	// politiscales quiz state
+	politiscalesAxesScores        = make(map[string]float64)
+	politiscalesQuestionCount     = 0
+	politiscalesShuffledQuestions []int
+	politiscalesCurrentIndex      = 0
+	politiscalesQuizState         = &PolitiscalesQuizState{}
+	politiscalesLanguage          = "en" // Default language
 )
 
 // PoliticalCompassArgs represents the arguments for the political compass question tool
@@ -60,6 +69,23 @@ type EightValuesStatusArgs struct {
 	// No arguments needed for status
 }
 
+// Politiscales tool argument types
+type PolitiscalesArgs struct {
+	Response string `json:"response" jsonschema:"required,description=Your response to the politiscales question. Valid values: strongly_disagree, disagree, neutral, agree, strongly_agree"`
+}
+
+type ResetPolitiscalesArgs struct {
+	// No arguments needed for reset
+}
+
+type PolitiscalesStatusArgs struct {
+	// No arguments needed for status
+}
+
+type SetPolitiscalesLanguageArgs struct {
+	Language string `json:"language" jsonschema:"required,description=Language code for the politiscales quiz. Valid values: en, fr, es, it, ar, ru, zh"`
+}
+
 // QuizState holds the current state of the quiz
 type QuizState struct {
 	Responses []politicalcompass.Response `json:"responses"`
@@ -68,6 +94,11 @@ type QuizState struct {
 // EightValuesQuizState holds the current state of the 8values quiz
 type EightValuesQuizState struct {
 	Responses []float64 `json:"responses"`
+}
+
+// PolitiscalesQuizState holds the current state of the politiscales quiz
+type PolitiscalesQuizState struct {
+	Responses map[int32]float64 `json:"responses"` // Question index -> response value
 }
 
 // Reset state helper function for tests
@@ -81,6 +112,9 @@ func resetState() {
 
 	// Reset 8values state too
 	resetEightValuesState()
+
+	// Reset politiscales state too
+	resetPolitiscalesState()
 }
 
 // Initialize shuffled question order
@@ -844,4 +878,468 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 	}
 
 	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+}
+
+// POLITISCALES QUIZ IMPLEMENTATION
+
+// Reset politiscales state helper function
+func resetPolitiscalesState() {
+	politiscalesAxesScores = make(map[string]float64)
+	politiscalesQuestionCount = 0
+	politiscalesShuffledQuestions = nil
+	politiscalesCurrentIndex = 0
+	politiscalesQuizState = &PolitiscalesQuizState{Responses: make(map[int32]float64)}
+}
+
+// Initialize shuffled question order for politiscales
+func initializePolitiscalesQuestions() {
+	if len(politiscalesShuffledQuestions) == 0 {
+		politiscalesShuffledQuestions = make([]int, len(politiscales.Questions))
+		for i := range politiscalesShuffledQuestions {
+			politiscalesShuffledQuestions[i] = i
+		}
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng.Shuffle(len(politiscalesShuffledQuestions), func(i, j int) {
+			politiscalesShuffledQuestions[i], politiscalesShuffledQuestions[j] = politiscalesShuffledQuestions[j], politiscalesShuffledQuestions[i]
+		})
+	}
+}
+
+// Get localized question text
+func getPolitiscalesQuestionText(questionKey string) string {
+	switch politiscalesLanguage {
+	case "fr":
+		if text, ok := politiscales.FRQuestions[questionKey]; ok {
+			return text
+		}
+	case "es":
+		if text, ok := politiscales.ESQuestions[questionKey]; ok {
+			return text
+		}
+	case "it":
+		if text, ok := politiscales.ITQuestions[questionKey]; ok {
+			return text
+		}
+	case "ar":
+		if text, ok := politiscales.ARQuestions[questionKey]; ok {
+			return text
+		}
+	case "ru":
+		if text, ok := politiscales.RUQuestions[questionKey]; ok {
+			return text
+		}
+	case "zh":
+		if text, ok := politiscales.ZHQuestions[questionKey]; ok {
+			return text
+		}
+	default: // "en"
+		if text, ok := politiscales.ENQuestions[questionKey]; ok {
+			return text
+		}
+	}
+	// Fallback to English if translation not found
+	if text, ok := politiscales.ENQuestions[questionKey]; ok {
+		return text
+	}
+	return questionKey // Last resort fallback
+}
+
+// Handler function for politiscales tool
+func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Initialize questions if not done already
+	initializePolitiscalesQuestions()
+
+	var question politiscales.Question
+	var isFirstQuestion = false
+
+	// If this is a response to a previous question, process it first
+	if politiscalesQuestionCount > 0 {
+		// Get the last asked question to calculate scores
+		lastQuestionIndex := politiscalesShuffledQuestions[politiscalesCurrentIndex-1]
+		lastQuestion := politiscales.Questions[lastQuestionIndex]
+
+		// Parse the response
+		var responseValue float64
+		switch args.Response {
+		case "strongly_disagree":
+			responseValue = politiscales.StronglyDisagree
+		case "disagree":
+			responseValue = politiscales.Disagree
+		case "neutral":
+			responseValue = politiscales.Neutral
+		case "agree":
+			responseValue = politiscales.Agree
+		case "strongly_agree":
+			responseValue = politiscales.StronglyAgree
+		default:
+			return nil, fmt.Errorf("invalid response: %s. Please use one of: strongly_disagree, disagree, neutral, agree, strongly_agree", args.Response)
+		}
+
+		// Apply the scoring logic from scoring.ts
+		if responseValue > 0 {
+			// Yes weights (positive response)
+			for _, weight := range lastQuestion.YesWeights {
+				if _, exists := politiscalesAxesScores[weight.Axis]; !exists {
+					politiscalesAxesScores[weight.Axis] = 0.0
+				}
+				politiscalesAxesScores[weight.Axis] += responseValue * weight.Value
+			}
+		} else if responseValue < 0 {
+			// No weights (negative response)
+			for _, weight := range lastQuestion.NoWeights {
+				if _, exists := politiscalesAxesScores[weight.Axis]; !exists {
+					politiscalesAxesScores[weight.Axis] = 0.0
+				}
+				politiscalesAxesScores[weight.Axis] += (-responseValue) * weight.Value
+			}
+		}
+		// Neutral responses (0) don't affect scores
+
+		// Record the response in quiz state
+		politiscalesQuizState.Responses[lastQuestion.Index] = responseValue
+	} else {
+		isFirstQuestion = true
+	}
+
+	// Check if we've asked all questions
+	if politiscalesCurrentIndex >= len(politiscalesShuffledQuestions) {
+		// Calculate final results using the scoring logic from scoring.ts
+		results := calculatePolitiscalesResults()
+
+		// Generate results message
+		message := fmt.Sprintf("🎉 Politiscales Quiz Complete!\n\n"+
+			"Questions answered: %d\n"+
+			"Language: %s\n\n"+
+			"**Your Political Profile:**\n", politiscalesQuestionCount, politiscalesLanguage)
+
+		// Group axes by pairs and show results
+		axesByPair := make(map[string][]string)
+		unpairedAxes := []string{}
+
+		for _, axis := range politiscales.Axes {
+			if axis.Pair != "" {
+				if axesByPair[axis.Pair] == nil {
+					axesByPair[axis.Pair] = []string{}
+				}
+				axesByPair[axis.Pair] = append(axesByPair[axis.Pair], axis.Name)
+			} else if results[axis.Name] >= axis.Threshold*100 {
+				unpairedAxes = append(unpairedAxes, axis.Name)
+			}
+		}
+
+		// Show paired axes
+		for pairName, axes := range axesByPair {
+			if len(axes) == 2 {
+				score1 := results[axes[0]]
+				score2 := results[axes[1]]
+				if score1 > score2 {
+					message += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score1, axes[0])
+				} else {
+					message += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score2, axes[1])
+				}
+			}
+		}
+
+		// Show unpaired axes that meet threshold
+		if len(unpairedAxes) > 0 {
+			message += "\n**Special Indicators:**\n"
+			for _, axis := range unpairedAxes {
+				message += fmt.Sprintf("- %s: %.1f%%\n", axis, results[axis])
+			}
+		}
+
+		message += "\n**Instructions for displaying the results:**\n" +
+			"1. Show the above political profile to the user\n" +
+			"2. Explain that scores represent the strength of alignment with each political axis\n" +
+			"3. Higher scores indicate stronger alignment with that particular political dimension\n\n" +
+			"Thank you for completing the Politiscales quiz!"
+
+		return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	}
+
+	// Get the next question
+	questionIndex := politiscalesShuffledQuestions[politiscalesCurrentIndex]
+	question = politiscales.Questions[questionIndex]
+	politiscalesCurrentIndex++
+	politiscalesQuestionCount++
+
+	// Get localized question text
+	questionText := getPolitiscalesQuestionText(question.Text)
+
+	var message string
+	if isFirstQuestion {
+		message = fmt.Sprintf("🗳️ Politiscales Quiz Started! (Language: %s)\n\n"+
+			"Question %d of %d:\n%s\n\n"+
+			"Please respond with: strongly_disagree, disagree, neutral, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
+			politiscalesLanguage, politiscalesQuestionCount, len(politiscales.Questions), questionText)
+	} else {
+		message = fmt.Sprintf("✅ Response recorded!\n\n"+
+			"Progress: %d of %d questions completed\n\n"+
+			"Question %d of %d:\n%s\n\n"+
+			"Please respond with: strongly_disagree, disagree, neutral, agree, or strongly_agree\n\n"+
+			"**Important Instructions:**\n"+
+			"1. Present this question in the chat for the user to see\n"+
+			"2. After the user provides their response, show both the question and their answer in chat\n"+
+			"3. Then call this tool again with their response to continue to the next question",
+			politiscalesQuestionCount-1, len(politiscales.Questions),
+			politiscalesQuestionCount, len(politiscales.Questions), questionText)
+	}
+
+	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+}
+
+// Calculate final politiscales results using scoring logic from scoring.ts
+func calculatePolitiscalesResults() map[string]float64 {
+	scores := make(map[string]float64)
+	sums := make(map[string]float64)
+
+	// Initialize scores for all axes
+	for _, axis := range politiscales.Axes {
+		scores[axis.Name] = 0.0
+		sums[axis.Name] = 0.0
+	}
+
+	// Calculate raw scores as per the TypeScript logic
+	for questionIndex, answerValue := range politiscalesQuizState.Responses {
+		question := politiscales.Questions[questionIndex]
+
+		if answerValue > 0 {
+			// Positive response - use YesWeights
+			for _, weight := range question.YesWeights {
+				scores[weight.Axis] += answerValue * weight.Value
+				if weight.Value > 0 {
+					sums[weight.Axis] += weight.Value
+				}
+			}
+		} else if answerValue < 0 {
+			// Negative response - use NoWeights
+			for _, weight := range question.NoWeights {
+				scores[weight.Axis] += (-answerValue) * weight.Value
+				if weight.Value > 0 {
+					sums[weight.Axis] += weight.Value
+				}
+			}
+		}
+		// Neutral (0) responses don't affect scores
+	}
+
+	// Normalize paired axes (ensure their sum doesn't exceed 100%)
+	pairedAxes := make(map[string][]string)
+	for _, axis := range politiscales.Axes {
+		if axis.Pair != "" {
+			if pairedAxes[axis.Pair] == nil {
+				pairedAxes[axis.Pair] = []string{}
+			}
+			pairedAxes[axis.Pair] = append(pairedAxes[axis.Pair], axis.Name)
+		}
+	}
+
+	// Apply normalization for each pair
+	for _, pair := range pairedAxes {
+		if len(pair) == 2 {
+			axis1, axis2 := pair[0], pair[1]
+			var value1, value2 float64
+
+			if sums[axis1] > 0 {
+				value1 = (scores[axis1] / sums[axis1]) * 100
+			}
+			if sums[axis2] > 0 {
+				value2 = (scores[axis2] / sums[axis2]) * 100
+			}
+
+			if value1+value2 > 100 {
+				ratio := 100.0 / (value1 + value2)
+				scores[axis1] *= ratio
+				scores[axis2] *= ratio
+			}
+		}
+	}
+
+	// Convert to final percentages
+	results := make(map[string]float64)
+	for axis, score := range scores {
+		if sums[axis] > 0 {
+			results[axis] = (score / sums[axis]) * 100
+		} else {
+			results[axis] = 0.0
+		}
+	}
+
+	return results
+}
+
+// Handler function for reset politiscales quiz tool
+func handleResetPolitiscales(args ResetPolitiscalesArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Reset all politiscales quiz state
+	resetPolitiscalesState()
+
+	message := "🔄 Politiscales Quiz Reset!\n\n" +
+		"All progress has been cleared. You can now start a fresh quiz by calling the politiscales tool.\n\n" +
+		"Call the politiscales tool to begin a new quiz."
+
+	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+}
+
+// Handler function for politiscales status tool
+func handlePolitiscalesStatus(args PolitiscalesStatusArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	totalQuestions := len(politiscales.Questions)
+	answered := len(politiscalesQuizState.Responses)
+	remaining := totalQuestions - answered
+
+	statusText := fmt.Sprintf(`🗳️ **Politiscales Quiz Status**
+
+**Progress:**
+- Questions answered: %d
+- Total questions: %d
+- Remaining questions: %d
+- Language: %s
+- Completion: %.1f%%
+`, answered, totalQuestions, remaining, politiscalesLanguage,
+		float64(answered)/float64(totalQuestions)*100)
+
+	// Only show scores if quiz is complete
+	if remaining == 0 && answered > 0 {
+		results := calculatePolitiscalesResults()
+		statusText += "\n**Final Results:**\n"
+
+		// Group and display results by pairs
+		axesByPair := make(map[string][]string)
+		unpairedAxes := []string{}
+
+		for _, axis := range politiscales.Axes {
+			if axis.Pair != "" {
+				if axesByPair[axis.Pair] == nil {
+					axesByPair[axis.Pair] = []string{}
+				}
+				axesByPair[axis.Pair] = append(axesByPair[axis.Pair], axis.Name)
+			} else if results[axis.Name] >= axis.Threshold*100 {
+				unpairedAxes = append(unpairedAxes, axis.Name)
+			}
+		}
+
+		// Show paired axes
+		for pairName, axes := range axesByPair {
+			if len(axes) == 2 {
+				score1 := results[axes[0]]
+				score2 := results[axes[1]]
+				if score1 > score2 {
+					statusText += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score1, axes[0])
+				} else {
+					statusText += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score2, axes[1])
+				}
+			}
+		}
+
+		// Show unpaired axes that meet threshold
+		if len(unpairedAxes) > 0 {
+			statusText += "\n**Special Indicators:**\n"
+			for _, axis := range unpairedAxes {
+				statusText += fmt.Sprintf("- %s: %.1f%%\n", axis, results[axis])
+			}
+		}
+	}
+
+	statusText += "\n**Response Distribution:**\n"
+
+	// Add response distribution
+	responseCount := make(map[string]int)
+	for _, response := range politiscalesQuizState.Responses {
+		if response == politiscales.StronglyDisagree {
+			responseCount["Strongly Disagree"]++
+		} else if response == politiscales.Disagree {
+			responseCount["Disagree"]++
+		} else if response == politiscales.Neutral {
+			responseCount["Neutral"]++
+		} else if response == politiscales.Agree {
+			responseCount["Agree"]++
+		} else if response == politiscales.StronglyAgree {
+			responseCount["Strongly Agree"]++
+		}
+	}
+
+	responses := []string{"Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"}
+	for _, resp := range responses {
+		count := responseCount[resp]
+		if count > 0 {
+			percentage := float64(count) / float64(answered) * 100
+			statusText += fmt.Sprintf("- %s: %d (%.1f%%)\n", resp, count, percentage)
+		}
+	}
+
+	if answered == 0 {
+		statusText += "\n*No questions answered yet. Use the `politiscales` tool to start the quiz.*"
+	} else if remaining > 0 {
+		statusText += fmt.Sprintf("\n*Continue with the `politiscales` tool to answer %d more questions.*", remaining)
+	} else {
+		statusText += "\n*✅ Quiz complete! All questions have been answered.*"
+	}
+
+	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+}
+
+// Handler function for setting politiscales language
+func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolResponse, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Validate language
+	validLanguages := []string{"en", "fr", "es", "it", "ar", "ru", "zh"}
+	validLang := false
+	for _, lang := range validLanguages {
+		if args.Language == lang {
+			validLang = true
+			break
+		}
+	}
+
+	if !validLang {
+		return nil, fmt.Errorf("invalid language: %s. Valid languages are: %v", args.Language, validLanguages)
+	}
+
+	// Check if quiz is in progress
+	if len(politiscalesQuizState.Responses) > 0 {
+		return mcp.NewToolResponse(mcp.NewTextContent(
+			fmt.Sprintf("⚠️ Cannot change language during quiz!\n\n"+
+				"The quiz is already in progress with %d questions answered.\n"+
+				"Please reset the quiz with `reset_politiscales` before changing the language.\n\n"+
+				"Current language: %s\n"+
+				"Requested language: %s",
+				len(politiscalesQuizState.Responses), politiscalesLanguage, args.Language),
+		)), nil
+	}
+
+	oldLanguage := politiscalesLanguage
+	politiscalesLanguage = args.Language
+
+	languageNames := map[string]string{
+		"en": "English",
+		"fr": "Français (French)",
+		"es": "Español (Spanish)",
+		"it": "Italiano (Italian)",
+		"ar": "العربية (Arabic)",
+		"ru": "Русский (Russian)",
+		"zh": "中文 (Chinese)",
+	}
+
+	message := fmt.Sprintf("🌐 Language Changed!\n\n"+
+		"Previous language: %s\n"+
+		"New language: %s\n\n"+
+		"The politiscales quiz will now be administered in %s.\n"+
+		"Use the `politiscales` tool to start the quiz.",
+		languageNames[oldLanguage], languageNames[args.Language], languageNames[args.Language])
+
+	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
 }

@@ -1,10 +1,10 @@
 # MCP-PoliticalCompass
 
-A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements two comprehensive political questionnaires: the classic Political Compass (62 questions) and the detailed 8values quiz (70 questions).
+A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements three comprehensive political questionnaires: the classic Political Compass (62 questions), the detailed 8values quiz (70 questions), and the multilingual Politiscales quiz (104 questions).
 
 ## Overview
 
-This MCP server provides two distinct political assessment tools:
+This MCP server provides three distinct political assessment tools:
 
 ### Political Compass Quiz
 
@@ -31,6 +31,15 @@ The 8values quiz provides a more detailed analysis across four political axes wi
 
 Each axis provides percentage scores and ideological classifications based on your responses.
 
+### Politiscales Quiz
+
+The Politiscales quiz offers the most comprehensive political analysis with 104 questions across multiple political dimensions:
+
+- **17 political axes** including paired axes like Economy (Communism vs Capitalism), Culture (Progressive vs Conservative), and Identity (Constructivism vs Essentialism)
+- **Multiple language support**: English, French, Spanish, Italian, Arabic, Russian, and Chinese
+- **Specialized indicators** for specific political tendencies like Anarchism, Feminism, and Pragmatism
+- **Sophisticated scoring algorithm** with paired axis normalization and threshold-based indicators
+
 ## Features
 
 ### Tools Available
@@ -46,6 +55,13 @@ Each axis provides percentage scores and ideological classifications based on yo
 - **`eight_values`**: Interactive 8values quiz tool with 70 questions across four political axes
 - **`reset_eight_values`**: Resets 8values quiz progress to start fresh
 - **`eight_values_status`**: Shows current 8values quiz progress and statistics
+
+#### Politiscales Tools
+
+- **`politiscales`**: Interactive politiscales quiz tool with 104 questions across 17 political axes
+- **`reset_politiscales`**: Resets politiscales quiz progress to start fresh
+- **`politiscales_status`**: Shows current politiscales quiz progress and statistics
+- **`set_politiscales_language`**: Sets the language for the politiscales quiz (supports: en, fr, es, it, ar, ru, zh)
 
 ### Quiz Capabilities
 
@@ -69,6 +85,21 @@ Each axis provides percentage scores and ideological classifications based on yo
 - **Detailed axis analysis** with percentage scores and ideological classifications
 - **Interactive SVG bar chart visualization** showing position on all four axes
 - **Response distribution analytics** with comprehensive breakdown
+
+#### Politiscales Features
+
+- **104 comprehensive questions** covering 17 distinct political axes
+- **Multilingual support** with 7 languages: English, French, Spanish, Italian, Arabic, Russian, Chinese
+- **Randomized question order** for unbiased assessment
+- **Five response options**: Strongly Disagree, Disagree, Neutral, Agree, Strongly Agree
+- **Sophisticated scoring algorithm** with paired axis normalization matching the original TypeScript implementation
+- **17 political axes** including both paired and standalone dimensions:
+  - **Paired axes**: Identity (Constructivism vs Essentialism), Justice (Rehabilitative vs Punitive), Culture (Progressive vs Conservative), Globalism (Internationalism vs Nationalism), Economy (Communism vs Capitalism), Markets (Regulation vs Laissez-faire), Environment (Ecology vs Production), Radicalism (Revolution vs Reform), Perspective (Materialism vs Idealism), Development (Sustainability vs Growth)
+  - **Standalone indicators**: Anarchism, Pragmatism, Feminism, Complotism, Veganism, Monarchism, Religion
+- **Threshold-based special indicators** that highlight specific political tendencies
+- **Real-time progress tracking** with language and completion status
+- **Response distribution analytics** with detailed breakdown by response type
+- **Dynamic language switching** (only available before starting the quiz)
 
 ### Visualization Features
 
@@ -134,6 +165,35 @@ Response: "agree"
 Tool: eight_values_status
 ```
 
+#### Politiscales Quiz
+
+**Setting language for Politiscales quiz:**
+
+```yaml
+Tool: set_politiscales_language
+Language: "fr"
+```
+
+**Starting the Politiscales quiz:**
+
+```yaml
+Tool: politiscales
+Response: ""
+```
+
+**Answering Politiscales questions:**
+
+```yaml
+Tool: politiscales
+Response: "strongly_agree"
+```
+
+**Checking Politiscales progress:**
+
+```yaml
+Tool: politiscales_status
+```
+
 ### Quiz Results
 
 #### Political Compass completion provides:
@@ -152,6 +212,15 @@ Tool: eight_values_status
 - Society Axis percentage and classification (Progressive/Traditional)
 - **Interactive SVG bar chart visualization** showing all four axis scores
 - Total questions answered and response distribution
+
+#### Politiscales completion provides:
+
+- **Paired axis results** with dominant tendency for each political dimension
+- **Special indicator scores** for specific political tendencies (Anarchism, Feminism, etc.)
+- **Multilingual results** displayed in the selected language
+- **Sophisticated scoring** using paired axis normalization and threshold analysis
+- **Comprehensive political profile** across 17 different political dimensions
+- Total questions answered and response distribution by language
 
 ## Installation & Setup
 

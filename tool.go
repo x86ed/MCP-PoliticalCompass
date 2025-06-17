@@ -900,7 +900,55 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 		{"revolution", "reform", "Revolution", "Reform", "#eb1a66", "#0ee4c8"},
 	}
 
-	svg := `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+	// Count qualifying badges to calculate required height
+	var qualifyingBadges []struct {
+		name  string
+		label string
+		score float64
+		color string
+	}
+
+	for _, axis := range politiscales.Axes {
+		if axis.Pair == "" { // Unpaired axes only
+			score := results[axis.Name]
+			threshold := axis.Threshold * 100
+			if score >= threshold && score > 0 {
+				label := axis.Label
+				if label == "" {
+					label = axis.Name // Fallback to axis name if no label
+				}
+				color := axis.Color
+				if color == "" {
+					color = "#666666" // Default color if none specified
+				}
+				qualifyingBadges = append(qualifyingBadges, struct {
+					name  string
+					label string
+					score float64
+					color string
+				}{axis.Name, label, score, color})
+			}
+		}
+	}
+
+	// Sort badges by score descending
+	for i := 0; i < len(qualifyingBadges)-1; i++ {
+		for j := i + 1; j < len(qualifyingBadges); j++ {
+			if qualifyingBadges[j].score > qualifyingBadges[i].score {
+				qualifyingBadges[i], qualifyingBadges[j] = qualifyingBadges[j], qualifyingBadges[i]
+			}
+		}
+	}
+
+	// Calculate required height: base + axes + spacing + badges section
+	baseHeight := 600
+	badgesHeight := 0
+	if len(qualifyingBadges) > 0 {
+		badgesHeight = 90 + (len(qualifyingBadges) * 25) // Header + badges
+	}
+	totalHeight := baseHeight + badgesHeight
+
+	svg := fmt.Sprintf(`<svg width="800" height="%d" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
       .axis-label { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
@@ -910,10 +958,10 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
   </defs>
   
   <!-- Background -->
-  <rect width="800" height="600" fill="#f8f9fa"/>
+  <rect width="800" height="%d" fill="#f8f9fa"/>
   
   <!-- Title -->
-  <text x="400" y="40" class="title" fill="#333">PolitiScales Results</text>`
+  <text x="400" y="40" class="title" fill="#333">PolitiScales Results</text>`, totalHeight, totalHeight)
 
 	y := 80
 	for _, pair := range axisPairs {
@@ -979,7 +1027,7 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 
 	// Add slogan section
 	y += 20
-	
+
 	// Generate slogan based on top characteristics using data from politiscales module
 	type characteristic struct {
 		name  string
@@ -1046,7 +1094,7 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 
 	svg += fmt.Sprintf(`
   <text x="400" y="%d" class="title" fill="#333" font-size="18">Political Identity</text>
-  <text x="400" y="%d" class="axis-label" fill="#666" font-size="14" text-anchor="middle">%s</text>`, 
+  <text x="400" y="%d" class="axis-label" fill="#666" font-size="14" text-anchor="middle">%s</text>`,
 		y, y+25, slogan)
 
 	// Add bonus characteristics section
@@ -1054,47 +1102,8 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 	svg += fmt.Sprintf(`
   <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
 
-	// Check for unpaired axes (badges) using data from the politiscales module
+	// Use the badges we already calculated
 	bonusY := y + 40
-
-	var qualifyingBadges []struct {
-		name  string
-		label string
-		score float64
-		color string
-	}
-
-	for _, axis := range politiscales.Axes {
-		if axis.Pair == "" { // Unpaired axes only
-			score := results[axis.Name]
-			threshold := axis.Threshold * 100
-			if score >= threshold && score > 0 {
-				label := axis.Label
-				if label == "" {
-					label = axis.Name // Fallback to axis name if no label
-				}
-				color := axis.Color
-				if color == "" {
-					color = "#666666" // Default color if none specified
-				}
-				qualifyingBadges = append(qualifyingBadges, struct {
-					name  string
-					label string
-					score float64
-					color string
-				}{axis.Name, label, score, color})
-			}
-		}
-	}
-
-	// Sort badges by score descending
-	for i := 0; i < len(qualifyingBadges)-1; i++ {
-		for j := i + 1; j < len(qualifyingBadges); j++ {
-			if qualifyingBadges[j].score > qualifyingBadges[i].score {
-				qualifyingBadges[i], qualifyingBadges[j] = qualifyingBadges[j], qualifyingBadges[i]
-			}
-		}
-	}
 
 	displayedBonus := 0
 	for _, badge := range qualifyingBadges {

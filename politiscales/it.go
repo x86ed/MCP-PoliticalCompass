@@ -1,7 +1,18 @@
 package politiscales
 
 // ITCopy is a map of Italian UI copy.
-var ITCopy = map[string]string{}
+var ITCopy = map[string]string{
+	"start_test":      "Inizia il test",
+	"question_x_of_n": "Domanda {x} di {n}",
+	"back_home":       "Torna alla home",
+	"prev_question":   "Torna alla domanda precedente",
+	"strong_disagree": "Fortemente in disaccordo",
+	"disagree":        "In disaccordo",
+	"neutral":         "Neutrale",
+	"agree":           "D'accordo",
+	"strong_agree":    "Fortemente d'accordo",
+	"result":          "Risultato",
+}
 
 // ITQuestions is a map of Italian Politiscales questions.
 var ITQuestions = map[string]string{

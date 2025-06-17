@@ -334,8 +334,8 @@ func TestFRQuestionsMap(t *testing.T) {
 }
 
 func TestITCopyMap(t *testing.T) {
-	// Italian JSON has no top-level UI keys, so ITCopy should be empty
-	expectedUIElements := 0
+	// Italian translations now include UI elements
+	expectedUIElements := 10
 	if len(ITCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in ITCopy, got %d", expectedUIElements, len(ITCopy))
 	}

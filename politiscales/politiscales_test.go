@@ -140,9 +140,13 @@ func TestAxesSlice(t *testing.T) {
 		"essentialism":     {"identity", "#34b634", "", 0.0},
 		"internationalism": {"globalism", "#3e6ffd", "humanity", 0.0},
 		"nationalism":      {"globalism", "#ff8500", "fatherland", 0.0},
-		"anarchism":        {"", "", "", 0.9},
-		"pragmatism":       {"", "", "", 0.5},
-		"feminism":         {"", "", "", 0.9},
+		"anarchism":        {"", "#000000", "Anarchist", 0.9},
+		"pragmatism":       {"", "#808080", "Pragmatist", 0.5},
+		"feminism":         {"", "#ff69b4", "Feminist", 0.9},
+		"complotism":       {"", "#8b0000", "Conspiracist", 0.9},
+		"veganism":         {"", "#228b22", "Vegan", 0.5},
+		"monarchism":       {"", "#ffd700", "Monarchist", 0.5},
+		"religion":         {"", "#4b0082", "Missionary", 0.5},
 	}
 
 	for _, axis := range Axes {

@@ -981,28 +981,8 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 	svg += fmt.Sprintf(`
   <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
 
-	// Check for unpaired axes (badges) using the same logic as text results
+	// Check for unpaired axes (badges) using data from the politiscales module
 	bonusY := y + 40
-	
-	badgeLabels := map[string]string{
-		"anarchism":  "Anarchist",
-		"pragmatism": "Pragmatist", 
-		"feminism":   "Feminist",
-		"complotism": "Conspiracist",
-		"veganism":   "Vegan",
-		"monarchism": "Monarchist",
-		"religion":   "Missionary",
-	}
-	
-	badgeColors := map[string]string{
-		"anarchism":  "#000000",
-		"pragmatism": "#808080",
-		"feminism":   "#ff69b4",
-		"complotism": "#8b0000",
-		"veganism":   "#228b22",
-		"monarchism": "#ffd700",
-		"religion":   "#4b0082",
-	}
 
 	var qualifyingBadges []struct {
 		name  string
@@ -1016,13 +996,13 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 			score := results[axis.Name]
 			threshold := axis.Threshold * 100
 			if score >= threshold && score > 0 {
-				label, hasLabel := badgeLabels[axis.Name]
-				if !hasLabel {
-					label = axis.Name
+				label := axis.Label
+				if label == "" {
+					label = axis.Name // Fallback to axis name if no label
 				}
-				color, hasColor := badgeColors[axis.Name]
-				if !hasColor {
-					color = "#666666" // Default color
+				color := axis.Color
+				if color == "" {
+					color = "#666666" // Default color if none specified
 				}
 				qualifyingBadges = append(qualifyingBadges, struct {
 					name  string
@@ -1235,17 +1215,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			}
 		}
 
-		// Show unpaired axes that meet threshold (using same logic as SVG badges)
-		badgeLabels := map[string]string{
-			"anarchism":  "Anarchism",
-			"pragmatism": "Pragmatism",
-			"feminism":   "Feminism",
-			"complotism": "Conspiracy",
-			"veganism":   "Veganism",
-			"monarchism": "Monarchism",
-			"religion":   "Religion",
-		}
-
+		// Show unpaired axes that meet threshold (using data from politiscales module)
 		var qualifyingBadges []struct {
 			name  string
 			label string
@@ -1257,9 +1227,9 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 				score := results[axis.Name]
 				threshold := axis.Threshold * 100
 				if score >= threshold && score > 0 {
-					label, hasLabel := badgeLabels[axis.Name]
-					if !hasLabel {
-						label = axis.Name
+					label := axis.Label
+					if label == "" {
+						label = axis.Name // Fallback to axis name if no label
 					}
 					qualifyingBadges = append(qualifyingBadges, struct {
 						name  string

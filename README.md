@@ -94,9 +94,11 @@ The Politiscales quiz offers the most comprehensive political analysis with 104 
 - **Five response options**: Strongly Disagree, Disagree, Neutral, Agree, Strongly Agree
 - **Sophisticated scoring algorithm** with paired axis normalization matching the original TypeScript implementation
 - **17 political axes** including both paired and standalone dimensions:
-  - **Paired axes**: Identity (Constructivism vs Essentialism), Justice (Rehabilitative vs Punitive), Culture (Progressive vs Conservative), Globalism (Internationalism vs Nationalism), Economy (Communism vs Capitalism), Markets (Regulation vs Laissez-faire), Environment (Ecology vs Production), Radicalism (Revolution vs Reform), Perspective (Materialism vs Idealism), Development (Sustainability vs Growth)
-  - **Standalone indicators**: Anarchism, Pragmatism, Feminism, Complotism, Veganism, Monarchism, Religion
-- **Threshold-based special indicators** that highlight specific political tendencies
+  - **Paired axes**: Identity (Constructivism vs Essentialism), Justice (Rehabilitative vs Punitive), Culture (Progressive vs Conservative), Globalism (Internationalism vs Nationalism), Economy (Communism vs Capitalism), Markets (Regulation vs Laissez-faire), Environment (Ecology vs Production), Change (Revolution vs Reform)
+  - **Unpaired axes (badges)**: Anarchism, Pragmatism, Feminism, Conspiracism, Veganism, Monarchism, Religion
+- **Enhanced results display** showing both paired values and neutral states for comprehensive analysis
+- **Threshold-based badge system** that highlights specific political tendencies with proper colors and labels sourced from module data
+- **Consistent SVG and text results** with unified badge logic and neutral state calculations
 - **Real-time progress tracking** with language and completion status
 - **Response distribution analytics** with detailed breakdown by response type
 - **Dynamic language switching** (only available before starting the quiz)
@@ -539,6 +541,8 @@ The server implements the authentic 8values scoring algorithm:
 
 ## Version History
 
+- **v2.8.4**: Enhanced politiscales functionality with improved neutral state handling, unified badge system sourced from module data, and comprehensive paired axis display in both SVG and text results
+- **v2.8.3**: Complete internationalization of politiscales with full UI and question translations for Arabic, Spanish, French, Italian, Russian, and Chinese
 - **v2.3.0**: Added complete 8values quiz implementation with 70 questions, improved test coverage to 90.9%, and comprehensive SVG visualizations
 - **v2.2.0**: Added quiz status tool with progress tracking and thread safety improvements
 - **v1.0.5**: Added interactive SVG visualization for quiz results

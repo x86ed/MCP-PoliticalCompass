@@ -1,7 +1,18 @@
 package politiscales
 
 // RUCopy is a map of Russian UI copy.
-var RUCopy = map[string]string{}
+var RUCopy = map[string]string{
+	"start_test":      "Начать тест",
+	"question_x_of_n": "Вопрос {x} из {n}",
+	"back_home":       "Вернуться на главную",
+	"prev_question":   "Вернуться к предыдущему вопросу",
+	"strong_disagree": "Полностью не согласен",
+	"disagree":        "Не согласен",
+	"neutral":         "Нейтрально",
+	"agree":           "Согласен",
+	"strong_agree":    "Полностью согласен",
+	"result":          "Результат",
+}
 
 // RUQuestions is a map of Russian Politiscales questions.
 var RUQuestions = map[string]string{

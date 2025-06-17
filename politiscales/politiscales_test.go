@@ -359,8 +359,8 @@ func TestITQuestionsMap(t *testing.T) {
 }
 
 func TestRUCopyMap(t *testing.T) {
-	// Russian JSON has no top-level UI keys, so RUCopy should be empty
-	expectedUIElements := 0
+	// Russian translations now include UI elements
+	expectedUIElements := 10
 	if len(RUCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in RUCopy, got %d", expectedUIElements, len(RUCopy))
 	}

@@ -1,7 +1,18 @@
 package politiscales
 
 // ESCopy is a map of Spanish UI copy.
-var ESCopy = map[string]string{}
+var ESCopy = map[string]string{
+	"start_test":      "Comenzar la prueba",
+	"question_x_of_n": "Pregunta {x} de {n}",
+	"back_home":       "Volver al inicio",
+	"prev_question":   "Volver a la pregunta anterior",
+	"strong_disagree": "Muy en desacuerdo",
+	"disagree":        "En desacuerdo",
+	"neutral":         "Neutral",
+	"agree":           "De acuerdo",
+	"strong_agree":    "Muy de acuerdo",
+	"result":          "Resultado",
+}
 
 // ESQuestions is a map of Spanish Politiscales questions.
 var ESQuestions = map[string]string{

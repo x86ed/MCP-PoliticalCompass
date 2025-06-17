@@ -284,8 +284,8 @@ func TestARQuestionsMap(t *testing.T) {
 }
 
 func TestESCopyMap(t *testing.T) {
-	// Spanish JSON has no top-level UI keys, so ESCopy should be empty
-	expectedUIElements := 0
+	// Spanish translations now include UI elements
+	expectedUIElements := 10
 	if len(ESCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in ESCopy, got %d", expectedUIElements, len(ESCopy))
 	}

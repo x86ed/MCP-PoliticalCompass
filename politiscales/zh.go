@@ -1,7 +1,18 @@
 package politiscales
 
 // ZHCopy is a map of Chinese UI copy.
-var ZHCopy = map[string]string{}
+var ZHCopy = map[string]string{
+	"start_test":      "开始测试",
+	"question_x_of_n": "第 {x} 题，共 {n} 题",
+	"back_home":       "返回首页",
+	"prev_question":   "返回上一题",
+	"strong_disagree": "非常不同意",
+	"disagree":        "不同意",
+	"neutral":         "中立",
+	"agree":           "同意",
+	"strong_agree":    "非常同意",
+	"result":          "结果",
+}
 
 // ZHQuestions is a map of Chinese Politiscales questions.
 var ZHQuestions = map[string]string{

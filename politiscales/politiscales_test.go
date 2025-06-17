@@ -384,8 +384,8 @@ func TestRUQuestionsMap(t *testing.T) {
 }
 
 func TestZHCopyMap(t *testing.T) {
-	// Chinese JSON has no top-level UI keys, so ZHCopy should be empty
-	expectedUIElements := 0
+	// Chinese translations now include UI elements
+	expectedUIElements := 10
 	if len(ZHCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in ZHCopy, got %d", expectedUIElements, len(ZHCopy))
 	}

@@ -147,34 +147,7 @@ var Axes = []Axis{
 		Label:     "",
 		Threshold: 0.0,
 	},
-	{
-		Name:      "materialism",
-		Pair:      "perspective",
-		Color:     "#ff00ff",
-		Label:     "",
-		Threshold: 0.0,
-	},
-	{
-		Name:      "idealism",
-		Pair:      "perspective",
-		Color:     "#00ffff",
-		Label:     "",
-		Threshold: 0.0,
-	},
-	{
-		Name:      "sustainability",
-		Pair:      "development",
-		Color:     "#00ff00",
-		Label:     "",
-		Threshold: 0.0,
-	},
-	{
-		Name:      "growth_at_all_costs",
-		Pair:      "development",
-		Color:     "#ff0000",
-		Label:     "",
-		Threshold: 0.0,
-	},
+
 	// Unpaired axes
 	{
 		Name:      "anarchism",

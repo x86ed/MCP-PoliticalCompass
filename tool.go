@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -880,68 +881,140 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
 }
 
-// POLITISCALES QUIZ IMPLEMENTATION
-
-// Reset politiscales state helper function
-func resetPolitiscalesState() {
-	politiscalesAxesScores = make(map[string]float64)
-	politiscalesQuestionCount = 0
-	politiscalesShuffledQuestions = nil
-	politiscalesCurrentIndex = 0
-	politiscalesQuizState = &PolitiscalesQuizState{Responses: make(map[int32]float64)}
-}
-
-// Initialize shuffled question order for politiscales
-func initializePolitiscalesQuestions() {
-	if len(politiscalesShuffledQuestions) == 0 {
-		politiscalesShuffledQuestions = make([]int, len(politiscales.Questions))
-		for i := range politiscalesShuffledQuestions {
-			politiscalesShuffledQuestions[i] = i
-		}
-		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rng.Shuffle(len(politiscalesShuffledQuestions), func(i, j int) {
-			politiscalesShuffledQuestions[i], politiscalesShuffledQuestions[j] = politiscalesShuffledQuestions[j], politiscalesShuffledQuestions[i]
-		})
+// Generate SVG results display matching the original PolitiScales format
+func generatePolitiscalesResultsSVG(results map[string]float64) string {
+	// Define the axis pairs in display order
+	axisPairs := []struct {
+		leftAxis, rightAxis   string
+		leftLabel, rightLabel string
+		leftColor, rightColor string
+	}{
+		{"constructivism", "essentialism", "Constructivism", "Essentialism", "#a425b6", "#34b634"},
+		{"rehabilitative_justice", "punitive_justice", "Rehabilitative Justice", "Punitive Justice", "#14bee1", "#e6cc27"},
+		{"progressive", "conservative", "Progressive", "Conservative", "#850083", "#970000"},
+		{"internationalism", "nationalism", "Internationalism", "Nationalism", "#3e6ffd", "#ff8500"},
+		{"communism", "capitalism", "Communism", "Capitalism", "#cc0000", "#ffb800"},
+		{"regulation", "laissez_faire", "Regulation", "Laissez-faire", "#269B32", "#6608C0"},
+		{"ecology", "production", "Ecology", "Production", "#a0e90d", "#4deae9"},
+		{"revolution", "reform", "Revolution", "Reform", "#eb1a66", "#0ee4c8"},
 	}
-}
 
-// Get localized question text
-func getPolitiscalesQuestionText(questionKey string) string {
-	switch politiscalesLanguage {
-	case "fr":
-		if text, ok := politiscales.FRQuestions[questionKey]; ok {
-			return text
+	svg := `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .axis-label { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
+      .percentage-text { font-family: Arial, sans-serif; font-size: 12px; fill: white; text-anchor: middle; }
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" class="title" fill="#333">PolitiScales Results</text>`
+
+	y := 80
+	for _, pair := range axisPairs {
+		leftScore := results[pair.leftAxis]
+		rightScore := results[pair.rightAxis]
+
+		// Calculate neutral space
+		total := leftScore + rightScore
+		neutral := 100 - total
+
+		// Calculate widths for 600px bar
+		barWidth := 600
+		leftWidth := int((leftScore / 100) * float64(barWidth))
+		rightWidth := int((rightScore / 100) * float64(barWidth))
+		neutralWidth := barWidth - leftWidth - rightWidth
+
+		if neutralWidth < 0 {
+			neutralWidth = 0
 		}
-	case "es":
-		if text, ok := politiscales.ESQuestions[questionKey]; ok {
-			return text
+
+		// Axis labels
+		svg += fmt.Sprintf(`
+  <!-- %s vs %s -->
+  <text x="100" y="%d" class="axis-label" fill="#333" text-anchor="end">%s</text>
+  <text x="700" y="%d" class="axis-label" fill="#333">%s</text>`,
+			pair.leftLabel, pair.rightLabel, y+15, pair.leftLabel, y+15, pair.rightLabel)
+
+		// Progress bar
+		barY := y + 20
+		currentX := 100
+
+		// Left side
+		if leftWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="%s"/>
+  <text x="%d" y="%d" class="percentage-text">%.0f%%</text>`,
+				currentX, barY, leftWidth, pair.leftColor,
+				currentX+leftWidth/2, barY+20, leftScore)
 		}
-	case "it":
-		if text, ok := politiscales.ITQuestions[questionKey]; ok {
-			return text
+		currentX += leftWidth
+
+		// Neutral section
+		if neutralWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="#e0e0e0"/>
+  <text x="%d" y="%d" class="percentage-text" fill="#666">%.0f%%</text>`,
+				currentX, barY, neutralWidth,
+				currentX+neutralWidth/2, barY+20, neutral)
 		}
-	case "ar":
-		if text, ok := politiscales.ARQuestions[questionKey]; ok {
-			return text
+		currentX += neutralWidth
+
+		// Right side
+		if rightWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="%s"/>
+  <text x="%d" y="%d" class="percentage-text">%.0f%%</text>`,
+				currentX, barY, rightWidth, pair.rightColor,
+				currentX+rightWidth/2, barY+20, rightScore)
 		}
-	case "ru":
-		if text, ok := politiscales.RUQuestions[questionKey]; ok {
-			return text
-		}
-	case "zh":
-		if text, ok := politiscales.ZHQuestions[questionKey]; ok {
-			return text
-		}
-	default: // "en"
-		if text, ok := politiscales.ENQuestions[questionKey]; ok {
-			return text
+
+		y += 65
+	}
+
+	// Add bonus characteristics section
+	y += 20
+	svg += fmt.Sprintf(`
+  <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
+
+	// Check for bonus characteristics
+	bonusY := y + 40
+	bonusCharacteristics := []struct {
+		name      string
+		threshold float64
+		label     string
+		color     string
+	}{
+		{"anarchism", 90.0, "Anarchist", "#000000"},
+		{"pragmatism", 50.0, "Pragmatist", "#808080"},
+		{"feminism", 90.0, "Feminist", "#ff69b4"},
+		{"complotism", 50.0, "Conspiracist", "#8b0000"},
+		{"veganism", 90.0, "Vegan", "#228b22"},
+		{"monarchism", 90.0, "Monarchist", "#ffd700"},
+		{"religion", 90.0, "Missionary", "#4b0082"},
+	}
+
+	displayedBonus := 0
+	for _, bonus := range bonusCharacteristics {
+		score := results[bonus.name]
+		if score >= bonus.threshold {
+			svg += fmt.Sprintf(`
+  <circle cx="150" cy="%d" r="8" fill="%s"/>
+  <text x="170" y="%d" class="axis-label" fill="#333">%s (%.0f%%)</text>`,
+				bonusY+displayedBonus*25, bonus.color,
+				bonusY+displayedBonus*25+5, bonus.label, score)
+			displayedBonus++
 		}
 	}
-	// Fallback to English if translation not found
-	if text, ok := politiscales.ENQuestions[questionKey]; ok {
-		return text
-	}
-	return questionKey // Last resort fallback
+
+	svg += `
+</svg>`
+
+	return svg
 }
 
 // Handler function for politiscales tool
@@ -1056,6 +1129,10 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			"2. Explain that scores represent the strength of alignment with each political axis\n" +
 			"3. Higher scores indicate stronger alignment with that particular political dimension\n\n" +
 			"Thank you for completing the Politiscales quiz!"
+
+		// Generate and attach SVG visualization
+		svg := generatePolitiscalesResultsSVG(results)
+		message += fmt.Sprintf("\n\n**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n%s", svg)
 
 		return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
 	}
@@ -1290,6 +1367,73 @@ func handlePolitiscalesStatus(args PolitiscalesStatusArgs) (*mcp.ToolResponse, e
 	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
 }
 
+// Reset politiscales quiz state
+func resetPolitiscalesState() {
+	politiscalesQuizState = &PolitiscalesQuizState{Responses: make(map[int32]float64)}
+	politiscalesQuestionCount = 0
+	politiscalesCurrentIndex = 0
+	politiscalesShuffledQuestions = nil
+}
+
+// Initialize politiscales questions (randomize order)
+func initializePolitiscalesQuestions() {
+	if politiscalesShuffledQuestions == nil {
+		// Create shuffled question indices
+		politiscalesShuffledQuestions = make([]int, len(politiscales.Questions))
+		for i := range politiscales.Questions {
+			politiscalesShuffledQuestions[i] = i
+		}
+
+		// Shuffle the questions using the same PRNG seed approach as political compass
+		for i := len(politiscalesShuffledQuestions) - 1; i > 0; i-- {
+			j := (i*17 + 23) % (i + 1) // Simple deterministic shuffle for testing
+			politiscalesShuffledQuestions[i], politiscalesShuffledQuestions[j] = politiscalesShuffledQuestions[j], politiscalesShuffledQuestions[i]
+		}
+	}
+}
+
+// Get question text in the specified language
+func getPolitiscalesQuestionText(key string) string {
+	switch politiscalesLanguage {
+	case "fr":
+		if text, ok := politiscales.FRQuestions[key]; ok {
+			return text
+		}
+	case "es":
+		if text, ok := politiscales.ESQuestions[key]; ok {
+			return text
+		}
+	case "it":
+		if text, ok := politiscales.ITQuestions[key]; ok {
+			return text
+		}
+	case "ar":
+		if text, ok := politiscales.ARQuestions[key]; ok {
+			return text
+		}
+	case "ru":
+		if text, ok := politiscales.RUQuestions[key]; ok {
+			return text
+		}
+	case "zh":
+		if text, ok := politiscales.ZHQuestions[key]; ok {
+			return text
+		}
+	default:
+		if text, ok := politiscales.ENQuestions[key]; ok {
+			return text
+		}
+	}
+
+	// Fallback to English if not found
+	if text, ok := politiscales.ENQuestions[key]; ok {
+		return text
+	}
+
+	// Final fallback to the key itself
+	return key
+}
+
 // Handler function for setting politiscales language
 func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolResponse, error) {
 	mutex.Lock()
@@ -1297,26 +1441,25 @@ func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolR
 
 	// Validate language
 	validLanguages := []string{"en", "fr", "es", "it", "ar", "ru", "zh"}
-	validLang := false
+	isValid := false
 	for _, lang := range validLanguages {
 		if args.Language == lang {
-			validLang = true
+			isValid = true
 			break
 		}
 	}
 
-	if !validLang {
-		return nil, fmt.Errorf("invalid language: %s. Valid languages are: %v", args.Language, validLanguages)
+	if !isValid {
+		return nil, fmt.Errorf("invalid language '%s'. Available languages: %s",
+			args.Language, strings.Join(validLanguages, ", "))
 	}
 
 	// Check if quiz is in progress
 	if len(politiscalesQuizState.Responses) > 0 {
 		return mcp.NewToolResponse(mcp.NewTextContent(
-			fmt.Sprintf("⚠️ Cannot change language during quiz!\n\n"+
-				"The quiz is already in progress with %d questions answered.\n"+
-				"Please reset the quiz with `reset_politiscales` before changing the language.\n\n"+
-				"Current language: %s\n"+
-				"Requested language: %s",
+			fmt.Sprintf("Cannot change language during quiz! %d questions answered.\n"+
+				"Current language: %s → Requested: %s\n\n"+
+				"Please reset the quiz first if you want to change the language.",
 				len(politiscalesQuizState.Responses), politiscalesLanguage, args.Language),
 		)), nil
 	}
@@ -1324,22 +1467,9 @@ func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolR
 	oldLanguage := politiscalesLanguage
 	politiscalesLanguage = args.Language
 
-	languageNames := map[string]string{
-		"en": "English",
-		"fr": "Français (French)",
-		"es": "Español (Spanish)",
-		"it": "Italiano (Italian)",
-		"ar": "العربية (Arabic)",
-		"ru": "Русский (Russian)",
-		"zh": "中文 (Chinese)",
-	}
-
-	message := fmt.Sprintf("🌐 Language Changed!\n\n"+
-		"Previous language: %s\n"+
-		"New language: %s\n\n"+
-		"The politiscales quiz will now be administered in %s.\n"+
-		"Use the `politiscales` tool to start the quiz.",
-		languageNames[oldLanguage], languageNames[args.Language], languageNames[args.Language])
-
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResponse(mcp.NewTextContent(
+		fmt.Sprintf("Language Changed! From %s to %s\n\n"+
+			"The next Politiscales quiz will be conducted in %s.",
+			oldLanguage, args.Language, args.Language),
+	)), nil
 }

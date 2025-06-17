@@ -75,8 +75,8 @@ func TestQuestionsSlice(t *testing.T) {
 }
 
 func TestAxesSlice(t *testing.T) {
-	// Test that we have the correct number of axes (20 paired + 7 unpaired = 27)
-	expectedCount := 27
+	// Test that we have the correct number of axes (16 paired + 7 unpaired = 23)
+	expectedCount := 23
 	if len(Axes) != expectedCount {
 		t.Errorf("Expected %d axes, got %d", expectedCount, len(Axes))
 	}
@@ -122,8 +122,8 @@ func TestAxesSlice(t *testing.T) {
 	}
 
 	// Verify we have the expected counts
-	if pairedAxesCount != 20 {
-		t.Errorf("Expected 20 paired axes, got %d", pairedAxesCount)
+	if pairedAxesCount != 16 {
+		t.Errorf("Expected 16 paired axes, got %d", pairedAxesCount)
 	}
 	if unpairedAxesCount != 7 {
 		t.Errorf("Expected 7 unpaired axes, got %d", unpairedAxesCount)

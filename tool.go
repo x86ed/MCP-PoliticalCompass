@@ -37,7 +37,7 @@ var (
 	politiscalesQuestionCount     = 0
 	politiscalesShuffledQuestions []int
 	politiscalesCurrentIndex      = 0
-	politiscalesQuizState         = &PolitiscalesQuizState{}
+	politiscalesQuizState         = &PolitiscalesQuizState{Responses: make(map[int32]float64)}
 	politiscalesLanguage          = "en" // Default language
 )
 

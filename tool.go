@@ -981,34 +981,76 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 	svg += fmt.Sprintf(`
   <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
 
-	// Check for bonus characteristics
+	// Check for unpaired axes (badges) using the same logic as text results
 	bonusY := y + 40
-	bonusCharacteristics := []struct {
-		name      string
-		threshold float64
-		label     string
-		color     string
-	}{
-		{"anarchism", 90.0, "Anarchist", "#000000"},
-		{"pragmatism", 50.0, "Pragmatist", "#808080"},
-		{"feminism", 90.0, "Feminist", "#ff69b4"},
-		{"complotism", 50.0, "Conspiracist", "#8b0000"},
-		{"veganism", 90.0, "Vegan", "#228b22"},
-		{"monarchism", 90.0, "Monarchist", "#ffd700"},
-		{"religion", 90.0, "Missionary", "#4b0082"},
+	
+	badgeLabels := map[string]string{
+		"anarchism":  "Anarchist",
+		"pragmatism": "Pragmatist", 
+		"feminism":   "Feminist",
+		"complotism": "Conspiracist",
+		"veganism":   "Vegan",
+		"monarchism": "Monarchist",
+		"religion":   "Missionary",
+	}
+	
+	badgeColors := map[string]string{
+		"anarchism":  "#000000",
+		"pragmatism": "#808080",
+		"feminism":   "#ff69b4",
+		"complotism": "#8b0000",
+		"veganism":   "#228b22",
+		"monarchism": "#ffd700",
+		"religion":   "#4b0082",
+	}
+
+	var qualifyingBadges []struct {
+		name  string
+		label string
+		score float64
+		color string
+	}
+
+	for _, axis := range politiscales.Axes {
+		if axis.Pair == "" { // Unpaired axes only
+			score := results[axis.Name]
+			threshold := axis.Threshold * 100
+			if score >= threshold && score > 0 {
+				label, hasLabel := badgeLabels[axis.Name]
+				if !hasLabel {
+					label = axis.Name
+				}
+				color, hasColor := badgeColors[axis.Name]
+				if !hasColor {
+					color = "#666666" // Default color
+				}
+				qualifyingBadges = append(qualifyingBadges, struct {
+					name  string
+					label string
+					score float64
+					color string
+				}{axis.Name, label, score, color})
+			}
+		}
+	}
+
+	// Sort badges by score descending
+	for i := 0; i < len(qualifyingBadges)-1; i++ {
+		for j := i + 1; j < len(qualifyingBadges); j++ {
+			if qualifyingBadges[j].score > qualifyingBadges[i].score {
+				qualifyingBadges[i], qualifyingBadges[j] = qualifyingBadges[j], qualifyingBadges[i]
+			}
+		}
 	}
 
 	displayedBonus := 0
-	for _, bonus := range bonusCharacteristics {
-		score := results[bonus.name]
-		if score >= bonus.threshold {
-			svg += fmt.Sprintf(`
+	for _, badge := range qualifyingBadges {
+		svg += fmt.Sprintf(`
   <circle cx="150" cy="%d" r="8" fill="%s"/>
-  <text x="170" y="%d" class="axis-label" fill="#333">%s (%.0f%%)</text>`,
-				bonusY+displayedBonus*25, bonus.color,
-				bonusY+displayedBonus*25+5, bonus.label, score)
-			displayedBonus++
-		}
+  <text x="170" y="%d" class="axis-label" fill="#333">%s (%.1f%%)</text>`,
+			bonusY+displayedBonus*25, badge.color,
+			bonusY+displayedBonus*25+5, badge.label, badge.score)
+		displayedBonus++
 	}
 
 	svg += `

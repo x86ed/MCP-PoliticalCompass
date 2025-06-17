@@ -309,8 +309,8 @@ func TestESQuestionsMap(t *testing.T) {
 }
 
 func TestFRCopyMap(t *testing.T) {
-	// French JSON has no top-level UI keys, so FRCopy should be empty
-	expectedUIElements := 0
+	// French translations now include UI elements
+	expectedUIElements := 10
 	if len(FRCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in FRCopy, got %d", expectedUIElements, len(FRCopy))
 	}

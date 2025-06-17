@@ -1,7 +1,18 @@
 package politiscales
 
 // FRCopy is a map of French UI copy.
-var FRCopy = map[string]string{}
+var FRCopy = map[string]string{
+	"start_test":      "Commencer le test",
+	"question_x_of_n": "Question {x} sur {n}",
+	"back_home":       "Retour à l'accueil",
+	"prev_question":   "Retour à la question précédente",
+	"strong_disagree": "Pas du tout d'accord",
+	"disagree":        "Pas d'accord",
+	"neutral":         "Neutre",
+	"agree":           "D'accord",
+	"strong_agree":    "Tout à fait d'accord",
+	"result":          "Résultat",
+}
 
 // FRQuestions is a map of French Politiscales questions.
 var FRQuestions = map[string]string{

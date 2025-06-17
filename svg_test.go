@@ -46,7 +46,8 @@ func TestSVGGeneration(t *testing.T) {
 				t.Error("SVG should have proper namespace")
 			}
 
-			fmt.Printf("Generated SVG for %s (%.2f, %.2f):\n%s\n\n", tc.name, tc.economic, tc.social, svg)
+			// Debug output commented out to reduce test noise
+			// fmt.Printf("Generated SVG for %s (%.2f, %.2f):\n%s\n\n", tc.name, tc.economic, tc.social, svg)
 		})
 	}
 }

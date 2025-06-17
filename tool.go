@@ -1193,10 +1193,10 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 
 		// Show paired axes with neutral calculations (matching SVG display)
 		pairDisplayOrder := []struct {
-			pairName  string
-			leftAxis  string
-			rightAxis string
-			leftLabel string
+			pairName   string
+			leftAxis   string
+			rightAxis  string
+			leftLabel  string
 			rightLabel string
 		}{
 			{"Identity", "constructivism", "essentialism", "Constructivism", "Essentialism"},
@@ -1212,11 +1212,11 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 		for _, pair := range pairDisplayOrder {
 			leftScore := results[pair.leftAxis]
 			rightScore := results[pair.rightAxis]
-			
+
 			// Calculate neutral space like in SVG
 			total := leftScore + rightScore
 			neutral := 100 - total
-			
+
 			if neutral < 0 {
 				neutral = 0
 			}
@@ -1224,7 +1224,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			// Show the detailed breakdown
 			if leftScore > 0 || rightScore > 0 || neutral > 0 {
 				message += fmt.Sprintf("- **%s:** ", pair.pairName)
-				
+
 				parts := []string{}
 				if leftScore > 0 {
 					parts = append(parts, fmt.Sprintf("%.1f%% %s", leftScore, pair.leftLabel))
@@ -1235,7 +1235,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 				if neutral > 0 {
 					parts = append(parts, fmt.Sprintf("%.1f%% Neutral", neutral))
 				}
-				
+
 				// Join with " | " separator for clarity
 				for i, part := range parts {
 					if i > 0 {
@@ -1367,8 +1367,19 @@ func calculatePolitiscalesResults() map[string]float64 {
 					sums[weight.Axis] += weight.Value
 				}
 			}
+		} else {
+			// Neutral (0) responses don't affect scores but still count towards sums
+			for _, weight := range question.YesWeights {
+				if weight.Value > 0 {
+					sums[weight.Axis] += weight.Value
+				}
+			}
+			for _, weight := range question.NoWeights {
+				if weight.Value > 0 {
+					sums[weight.Axis] += weight.Value
+				}
+			}
 		}
-		// Neutral (0) responses don't affect scores
 	}
 
 	// Normalize paired axes (ensure their sum doesn't exceed 100%)

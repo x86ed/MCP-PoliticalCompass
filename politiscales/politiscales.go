@@ -171,7 +171,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#000000",
 		Label:     "Anarchist",
-		Threshold: 0.6,
+		Threshold: 0.9,
 		Slogan:    "No Gods No Masters",
 	},
 	{
@@ -179,7 +179,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#808080",
 		Label:     "Pragmatist",
-		Threshold: 0.3,
+		Threshold: 0.5,
 		Slogan:    "Practical Solutions",
 	},
 	{
@@ -187,7 +187,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#ff69b4",
 		Label:     "Feminist",
-		Threshold: 0.6,
+		Threshold: 0.9,
 		Slogan:    "Gender Equality",
 	},
 	{
@@ -195,7 +195,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#8b0000",
 		Label:     "Conspiracist",
-		Threshold: 0.7,
+		Threshold: 0.9,
 		Slogan:    "Question Everything",
 	},
 	{
@@ -203,7 +203,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#228b22",
 		Label:     "Vegan",
-		Threshold: 0.3,
+		Threshold: 0.5,
 		Slogan:    "Animal Rights",
 	},
 	{
@@ -211,7 +211,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#ffd700",
 		Label:     "Monarchist",
-		Threshold: 0.3,
+		Threshold: 0.5,
 		Slogan:    "Royal Tradition",
 	},
 	{
@@ -219,7 +219,7 @@ var Axes = []Axis{
 		Pair:      "",
 		Color:     "#4b0082",
 		Label:     "Missionary",
-		Threshold: 0.3,
+		Threshold: 0.5,
 		Slogan:    "Faithful Believer",
 	},
 }

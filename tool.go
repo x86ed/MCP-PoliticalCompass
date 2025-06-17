@@ -1085,12 +1085,85 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 		// Generate results message
 		message := fmt.Sprintf("🎉 Politiscales Quiz Complete!\n\n"+
 			"Questions answered: %d\n"+
-			"Language: %s\n\n"+
-			"**Your Political Profile:**\n", politiscalesQuestionCount, politiscalesLanguage)
+			"Language: %s\n\n", politiscalesQuestionCount, politiscalesLanguage)
 
-		// Group axes by pairs and show results
+		// Generate slogan based on top characteristics
+		type characteristic struct {
+			name  string
+			value float64
+		}
+		
+		var characteristics []characteristic
+		for name, value := range results {
+			if value > 0 {
+				characteristics = append(characteristics, characteristic{name, value})
+			}
+		}
+		
+		// Sort by value descending
+		for i := 0; i < len(characteristics)-1; i++ {
+			for j := i + 1; j < len(characteristics); j++ {
+				if characteristics[j].value > characteristics[i].value {
+					characteristics[i], characteristics[j] = characteristics[j], characteristics[i]
+				}
+			}
+		}
+		
+		// Generate slogan from top 3 characteristics
+		slogans := map[string]string{
+			"constructivism": "Social Constructor",
+			"essentialism": "Natural Order",
+			"communism": "Workers United",
+			"capitalism": "Free Markets",
+			"ecology": "Green Future",
+			"production": "Progress First",
+			"progressive": "Forward Thinking",
+			"conservative": "Traditional Values",
+			"internationalism": "Global Citizen",
+			"nationalism": "Nation First",
+			"regulation": "Guided Economy",
+			"laissez_faire": "Market Freedom",
+			"revolution": "Radical Change",
+			"reform": "Gradual Progress",
+			"rehabilitative_justice": "Restorative Justice",
+			"punitive_justice": "Law and Order",
+			"anarchism": "No Gods No Masters",
+			"pragmatism": "Practical Solutions",
+			"feminism": "Gender Equality",
+		}
+		
+		sloganParts := []string{}
+		for i, char := range characteristics {
+			if i >= 3 { break }
+			if sloganText, exists := slogans[char.name]; exists && char.value >= 50 {
+				sloganParts = append(sloganParts, sloganText)
+			}
+		}
+		
+		// If no high-scoring characteristics, try with lower threshold
+		if len(sloganParts) == 0 {
+			for i, char := range characteristics {
+				if i >= 3 { break }
+				if sloganText, exists := slogans[char.name]; exists && char.value >= 30 {
+					sloganParts = append(sloganParts, sloganText)
+				}
+			}
+		}
+		
+		var slogan string
+		if len(sloganParts) > 0 {
+			for i, part := range sloganParts {
+				if i > 0 { slogan += " · " }
+				slogan += part
+			}
+		} else {
+			slogan = "Political Moderate"
+		}
+
+		message += fmt.Sprintf("**Your Political Identity:** %s\n\n**Your Political Profile:**\n", slogan)
+
+		// Group axes by pairs for display
 		axesByPair := make(map[string][]string)
-		unpairedAxes := []string{}
 
 		for _, axis := range politiscales.Axes {
 			if axis.Pair != "" {
@@ -1098,8 +1171,6 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 					axesByPair[axis.Pair] = []string{}
 				}
 				axesByPair[axis.Pair] = append(axesByPair[axis.Pair], axis.Name)
-			} else if results[axis.Name] >= axis.Threshold*100 {
-				unpairedAxes = append(unpairedAxes, axis.Name)
 			}
 		}
 
@@ -1116,11 +1187,54 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			}
 		}
 
-		// Show unpaired axes that meet threshold
-		if len(unpairedAxes) > 0 {
-			message += "\n**Special Indicators:**\n"
-			for _, axis := range unpairedAxes {
-				message += fmt.Sprintf("- %s: %.1f%%\n", axis, results[axis])
+		// Show unpaired axes that meet threshold (using same logic as SVG badges)
+		badgeLabels := map[string]string{
+			"anarchism":  "Anarchism",
+			"pragmatism": "Pragmatism",
+			"feminism":   "Feminism",
+			"complotism": "Conspiracy",
+			"veganism":   "Veganism",
+			"monarchism": "Monarchism",
+			"religion":   "Religion",
+		}
+		
+		var qualifyingBadges []struct {
+			name  string
+			label string
+			score float64
+		}
+		
+		for _, axis := range politiscales.Axes {
+			if axis.Pair == "" { // Unpaired axes only
+				score := results[axis.Name]
+				threshold := axis.Threshold * 100
+				if score >= threshold && score > 0 {
+					label, hasLabel := badgeLabels[axis.Name]
+					if !hasLabel {
+						label = axis.Name
+					}
+					qualifyingBadges = append(qualifyingBadges, struct {
+						name  string
+						label string
+						score float64
+					}{axis.Name, label, score})
+				}
+			}
+		}
+		
+		// Sort badges by score descending
+		for i := 0; i < len(qualifyingBadges)-1; i++ {
+			for j := i + 1; j < len(qualifyingBadges); j++ {
+				if qualifyingBadges[j].score > qualifyingBadges[i].score {
+					qualifyingBadges[i], qualifyingBadges[j] = qualifyingBadges[j], qualifyingBadges[i]
+				}
+			}
+		}
+		
+		if len(qualifyingBadges) > 0 {
+			message += "\n**Notable Characteristics:**\n"
+			for _, badge := range qualifyingBadges {
+				message += fmt.Sprintf("- %s: %.1f%%\n", badge.label, badge.score)
 			}
 		}
 

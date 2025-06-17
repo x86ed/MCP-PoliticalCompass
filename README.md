@@ -1,6 +1,6 @@
 # MCP-PoliticalCompass
 
-A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements three comprehensive political questionnaires: the classic Political Compass (62 questions), the detailed 8values quiz (70 questions), and the multilingual Politiscales quiz (104 questions).
+A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements three comprehensive political questionnaires: the classic Political Compass (62 questions), the detailed 8values quiz (70 questions), and the multilingual Politiscales quiz (117 questions).
 
 ## Overview
 
@@ -33,7 +33,7 @@ Each axis provides percentage scores and ideological classifications based on yo
 
 ### Politiscales Quiz
 
-The Politiscales quiz offers the most comprehensive political analysis with 104 questions across multiple political dimensions:
+The Politiscales quiz offers the most comprehensive political analysis with 117 questions across multiple political dimensions:
 
 - **17 political axes** including paired axes like Economy (Communism vs Capitalism), Culture (Progressive vs Conservative), and Identity (Constructivism vs Essentialism)
 - **Multiple language support**: English, French, Spanish, Italian, Arabic, Russian, and Chinese
@@ -58,7 +58,7 @@ The Politiscales quiz offers the most comprehensive political analysis with 104 
 
 #### Politiscales Tools
 
-- **`politiscales`**: Interactive politiscales quiz tool with 104 questions across 17 political axes
+- **`politiscales`**: Interactive politiscales quiz tool with 117 questions across 17 political axes
 - **`reset_politiscales`**: Resets politiscales quiz progress to start fresh
 - **`politiscales_status`**: Shows current politiscales quiz progress and statistics
 - **`set_politiscales_language`**: Sets the language for the politiscales quiz (supports: en, fr, es, it, ar, ru, zh)

@@ -883,7 +883,8 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 
 // Generate SVG results display matching the original PolitiScales format
 func generatePolitiscalesResultsSVG(results map[string]float64) string {
-	// Define the axis pairs in display order
+	// Define the axis pairs in display order using data from politiscales module
+	// But maintain specific display order and labels for consistency
 	axisPairs := []struct {
 		leftAxis, rightAxis   string
 		leftLabel, rightLabel string
@@ -1190,28 +1191,59 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 
 		message += fmt.Sprintf("**Your Political Identity:** %s\n\n**Your Political Profile:**\n", slogan)
 
-		// Group axes by pairs for display
-		axesByPair := make(map[string][]string)
-
-		for _, axis := range politiscales.Axes {
-			if axis.Pair != "" {
-				if axesByPair[axis.Pair] == nil {
-					axesByPair[axis.Pair] = []string{}
-				}
-				axesByPair[axis.Pair] = append(axesByPair[axis.Pair], axis.Name)
-			}
+		// Show paired axes with neutral calculations (matching SVG display)
+		pairDisplayOrder := []struct {
+			pairName  string
+			leftAxis  string
+			rightAxis string
+			leftLabel string
+			rightLabel string
+		}{
+			{"Identity", "constructivism", "essentialism", "Constructivism", "Essentialism"},
+			{"Justice", "rehabilitative_justice", "punitive_justice", "Rehabilitative Justice", "Punitive Justice"},
+			{"Culture", "progressive", "conservative", "Progressive", "Conservative"},
+			{"Globalism", "internationalism", "nationalism", "Internationalism", "Nationalism"},
+			{"Economy", "communism", "capitalism", "Communism", "Capitalism"},
+			{"Markets", "regulation", "laissez_faire", "Regulation", "Laissez-faire"},
+			{"Environment", "ecology", "production", "Ecology", "Production"},
+			{"Change", "revolution", "reform", "Revolution", "Reform"},
 		}
 
-		// Show paired axes
-		for pairName, axes := range axesByPair {
-			if len(axes) == 2 {
-				score1 := results[axes[0]]
-				score2 := results[axes[1]]
-				if score1 > score2 {
-					message += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score1, axes[0])
-				} else {
-					message += fmt.Sprintf("- %s: %.1f%% %s\n", pairName, score2, axes[1])
+		for _, pair := range pairDisplayOrder {
+			leftScore := results[pair.leftAxis]
+			rightScore := results[pair.rightAxis]
+			
+			// Calculate neutral space like in SVG
+			total := leftScore + rightScore
+			neutral := 100 - total
+			
+			if neutral < 0 {
+				neutral = 0
+			}
+
+			// Show the detailed breakdown
+			if leftScore > 0 || rightScore > 0 || neutral > 0 {
+				message += fmt.Sprintf("- **%s:** ", pair.pairName)
+				
+				parts := []string{}
+				if leftScore > 0 {
+					parts = append(parts, fmt.Sprintf("%.1f%% %s", leftScore, pair.leftLabel))
 				}
+				if rightScore > 0 {
+					parts = append(parts, fmt.Sprintf("%.1f%% %s", rightScore, pair.rightLabel))
+				}
+				if neutral > 0 {
+					parts = append(parts, fmt.Sprintf("%.1f%% Neutral", neutral))
+				}
+				
+				// Join with " | " separator for clarity
+				for i, part := range parts {
+					if i > 0 {
+						message += " | "
+					}
+					message += part
+				}
+				message += "\n"
 			}
 		}
 

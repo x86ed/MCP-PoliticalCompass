@@ -54,6 +54,30 @@ func setupServer(transport transport.Transport) (*mcp.Server, error) {
 		return nil, err
 	}
 
+	// Register politiscales quiz tool
+	err = server.RegisterTool("politiscales", "Presents a politiscales political question and accepts a response", handlePolitiscales)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register reset politiscales quiz tool
+	err = server.RegisterTool("reset_politiscales", "Resets the politiscales quiz progress", handleResetPolitiscales)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register politiscales quiz status tool
+	err = server.RegisterTool("politiscales_status", "Shows current politiscales quiz progress and statistics", handlePolitiscalesStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register set politiscales language tool
+	err = server.RegisterTool("set_politiscales_language", "Sets the language for the politiscales quiz", handleSetPolitiscalesLanguage)
+	if err != nil {
+		return nil, err
+	}
+
 	return server, nil
 }
 

@@ -977,8 +977,80 @@ func generatePolitiscalesResultsSVG(results map[string]float64) string {
 		y += 65
 	}
 
-	// Add bonus characteristics section
+	// Add slogan section
 	y += 20
+	
+	// Generate slogan based on top characteristics using data from politiscales module
+	type characteristic struct {
+		name  string
+		value float64
+	}
+
+	var characteristics []characteristic
+	for name, value := range results {
+		if value > 0 {
+			characteristics = append(characteristics, characteristic{name, value})
+		}
+	}
+
+	// Sort by value descending
+	for i := 0; i < len(characteristics)-1; i++ {
+		for j := i + 1; j < len(characteristics); j++ {
+			if characteristics[j].value > characteristics[i].value {
+				characteristics[i], characteristics[j] = characteristics[j], characteristics[i]
+			}
+		}
+	}
+
+	// Create slogans map from module data
+	slogans := make(map[string]string)
+	for _, axis := range politiscales.Axes {
+		if axis.Slogan != "" {
+			slogans[axis.Name] = axis.Slogan
+		}
+	}
+
+	sloganParts := []string{}
+	for i, char := range characteristics {
+		if i >= 3 {
+			break
+		}
+		if sloganText, exists := slogans[char.name]; exists && char.value >= 50 {
+			sloganParts = append(sloganParts, sloganText)
+		}
+	}
+
+	// If no high-scoring characteristics, try with lower threshold
+	if len(sloganParts) == 0 {
+		for i, char := range characteristics {
+			if i >= 3 {
+				break
+			}
+			if sloganText, exists := slogans[char.name]; exists && char.value >= 30 {
+				sloganParts = append(sloganParts, sloganText)
+			}
+		}
+	}
+
+	var slogan string
+	if len(sloganParts) > 0 {
+		for i, part := range sloganParts {
+			if i > 0 {
+				slogan += " · "
+			}
+			slogan += part
+		}
+	} else {
+		slogan = "Political Moderate"
+	}
+
+	svg += fmt.Sprintf(`
+  <text x="400" y="%d" class="title" fill="#333" font-size="18">Political Identity</text>
+  <text x="400" y="%d" class="axis-label" fill="#666" font-size="14" text-anchor="middle">%s</text>`, 
+		y, y+25, slogan)
+
+	// Add bonus characteristics section
+	y += 50
 	svg += fmt.Sprintf(`
   <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
 
@@ -1132,27 +1204,12 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			}
 		}
 
-		// Generate slogan from top 3 characteristics
-		slogans := map[string]string{
-			"constructivism":         "Social Constructor",
-			"essentialism":           "Natural Order",
-			"communism":              "Workers United",
-			"capitalism":             "Free Markets",
-			"ecology":                "Green Future",
-			"production":             "Progress First",
-			"progressive":            "Forward Thinking",
-			"conservative":           "Traditional Values",
-			"internationalism":       "Global Citizen",
-			"nationalism":            "Nation First",
-			"regulation":             "Guided Economy",
-			"laissez_faire":          "Market Freedom",
-			"revolution":             "Radical Change",
-			"reform":                 "Gradual Progress",
-			"rehabilitative_justice": "Restorative Justice",
-			"punitive_justice":       "Law and Order",
-			"anarchism":              "No Gods No Masters",
-			"pragmatism":             "Practical Solutions",
-			"feminism":               "Gender Equality",
+		// Generate slogan from top 3 characteristics using data from politiscales module
+		slogans := make(map[string]string)
+		for _, axis := range politiscales.Axes {
+			if axis.Slogan != "" {
+				slogans[axis.Name] = axis.Slogan
+			}
 		}
 
 		sloganParts := []string{}

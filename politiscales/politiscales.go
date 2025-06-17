@@ -30,6 +30,7 @@ type Axis struct {
 	Color     string
 	Label     string
 	Threshold float64
+	Slogan    string
 }
 
 // Axes contains all the political axes with their properties
@@ -41,6 +42,7 @@ var Axes = []Axis{
 		Color:     "#a425b6",
 		Label:     "equality",
 		Threshold: 0.0,
+		Slogan:    "Social Constructor",
 	},
 	{
 		Name:      "essentialism",
@@ -48,6 +50,7 @@ var Axes = []Axis{
 		Color:     "#34b634",
 		Label:     "",
 		Threshold: 0.0,
+		Slogan:    "Natural Order",
 	},
 	{
 		Name:      "rehabilitative_justice",
@@ -55,6 +58,7 @@ var Axes = []Axis{
 		Color:     "#14bee1",
 		Label:     "justice",
 		Threshold: 0.0,
+		Slogan:    "Restorative Justice",
 	},
 	{
 		Name:      "punitive_justice",
@@ -62,6 +66,7 @@ var Axes = []Axis{
 		Color:     "#e6cc27",
 		Label:     "order",
 		Threshold: 0.0,
+		Slogan:    "Law and Order",
 	},
 	{
 		Name:      "progressive",
@@ -69,6 +74,7 @@ var Axes = []Axis{
 		Color:     "#850083",
 		Label:     "",
 		Threshold: 0.0,
+		Slogan:    "Forward Thinking",
 	},
 	{
 		Name:      "conservative",
@@ -76,6 +82,7 @@ var Axes = []Axis{
 		Color:     "#970000",
 		Label:     "family",
 		Threshold: 0.0,
+		Slogan:    "Traditional Values",
 	},
 	{
 		Name:      "internationalism",
@@ -83,6 +90,7 @@ var Axes = []Axis{
 		Color:     "#3e6ffd",
 		Label:     "humanity",
 		Threshold: 0.0,
+		Slogan:    "Global Citizen",
 	},
 	{
 		Name:      "nationalism",
@@ -90,6 +98,7 @@ var Axes = []Axis{
 		Color:     "#ff8500",
 		Label:     "fatherland",
 		Threshold: 0.0,
+		Slogan:    "Nation First",
 	},
 	{
 		Name:      "communism",
@@ -97,6 +106,7 @@ var Axes = []Axis{
 		Color:     "#cc0000",
 		Label:     "socialism",
 		Threshold: 0.0,
+		Slogan:    "Workers United",
 	},
 	{
 		Name:      "capitalism",
@@ -104,6 +114,7 @@ var Axes = []Axis{
 		Color:     "#ffb800",
 		Label:     "work",
 		Threshold: 0.0,
+		Slogan:    "Free Markets",
 	},
 	{
 		Name:      "regulation",
@@ -111,6 +122,7 @@ var Axes = []Axis{
 		Color:     "#269B32",
 		Label:     "",
 		Threshold: 0.0,
+		Slogan:    "Guided Economy",
 	},
 	{
 		Name:      "laissez_faire",
@@ -118,6 +130,7 @@ var Axes = []Axis{
 		Color:     "#6608C0",
 		Label:     "liberty",
 		Threshold: 0.0,
+		Slogan:    "Market Freedom",
 	},
 	{
 		Name:      "ecology",
@@ -125,6 +138,7 @@ var Axes = []Axis{
 		Color:     "#a0e90d",
 		Label:     "ecology",
 		Threshold: 0.0,
+		Slogan:    "Green Future",
 	},
 	{
 		Name:      "production",
@@ -132,6 +146,7 @@ var Axes = []Axis{
 		Color:     "#4deae9",
 		Label:     "",
 		Threshold: 0.0,
+		Slogan:    "Progress First",
 	},
 	{
 		Name:      "revolution",
@@ -139,6 +154,7 @@ var Axes = []Axis{
 		Color:     "#eb1a66",
 		Label:     "revolution",
 		Threshold: 0.0,
+		Slogan:    "Radical Change",
 	},
 	{
 		Name:      "reform",
@@ -146,6 +162,7 @@ var Axes = []Axis{
 		Color:     "#0ee4c8",
 		Label:     "",
 		Threshold: 0.0,
+		Slogan:    "Gradual Progress",
 	},
 
 	// Unpaired axes
@@ -155,6 +172,7 @@ var Axes = []Axis{
 		Color:     "#000000",
 		Label:     "Anarchist",
 		Threshold: 0.9,
+		Slogan:    "No Gods No Masters",
 	},
 	{
 		Name:      "pragmatism",
@@ -162,6 +180,7 @@ var Axes = []Axis{
 		Color:     "#808080",
 		Label:     "Pragmatist",
 		Threshold: 0.5,
+		Slogan:    "Practical Solutions",
 	},
 	{
 		Name:      "feminism",
@@ -169,6 +188,7 @@ var Axes = []Axis{
 		Color:     "#ff69b4",
 		Label:     "Feminist",
 		Threshold: 0.9,
+		Slogan:    "Gender Equality",
 	},
 	{
 		Name:      "complotism",
@@ -176,6 +196,7 @@ var Axes = []Axis{
 		Color:     "#8b0000",
 		Label:     "Conspiracist",
 		Threshold: 0.9,
+		Slogan:    "Question Everything",
 	},
 	{
 		Name:      "veganism",
@@ -183,6 +204,7 @@ var Axes = []Axis{
 		Color:     "#228b22",
 		Label:     "Vegan",
 		Threshold: 0.5,
+		Slogan:    "Animal Rights",
 	},
 	{
 		Name:      "monarchism",
@@ -190,6 +212,7 @@ var Axes = []Axis{
 		Color:     "#ffd700",
 		Label:     "Monarchist",
 		Threshold: 0.5,
+		Slogan:    "Royal Tradition",
 	},
 	{
 		Name:      "religion",
@@ -197,5 +220,6 @@ var Axes = []Axis{
 		Color:     "#4b0082",
 		Label:     "Missionary",
 		Threshold: 0.5,
+		Slogan:    "Faithful Believer",
 	},
 }

@@ -2,7 +2,16 @@ package politiscales
 
 // ARCopy contains Arabic translations for general UI elements
 var ARCopy = map[string]string{
-	// Add UI elements from ar.json if they exist, otherwise leave empty or add manually
+	"start_test":      "ابدأ الاختبار",
+	"question_x_of_n": "السؤال {x} من {n}",
+	"back_home":       "العودة إلى الصفحة الرئيسية",
+	"prev_question":   "العودة إلى السؤال السابق",
+	"strong_disagree": "أعارض بشدة",
+	"disagree":        "أعارض",
+	"neutral":         "محايد",
+	"agree":           "أوافق",
+	"strong_agree":    "أوافق بشدة",
+	"result":          "النتيجة",
 }
 
 // ARQuestions contains Arabic translations for all politiscales questions

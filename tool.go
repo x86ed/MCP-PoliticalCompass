@@ -1092,14 +1092,14 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			name  string
 			value float64
 		}
-		
+
 		var characteristics []characteristic
 		for name, value := range results {
 			if value > 0 {
 				characteristics = append(characteristics, characteristic{name, value})
 			}
 		}
-		
+
 		// Sort by value descending
 		for i := 0; i < len(characteristics)-1; i++ {
 			for j := i + 1; j < len(characteristics); j++ {
@@ -1108,52 +1108,58 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 				}
 			}
 		}
-		
+
 		// Generate slogan from top 3 characteristics
 		slogans := map[string]string{
-			"constructivism": "Social Constructor",
-			"essentialism": "Natural Order",
-			"communism": "Workers United",
-			"capitalism": "Free Markets",
-			"ecology": "Green Future",
-			"production": "Progress First",
-			"progressive": "Forward Thinking",
-			"conservative": "Traditional Values",
-			"internationalism": "Global Citizen",
-			"nationalism": "Nation First",
-			"regulation": "Guided Economy",
-			"laissez_faire": "Market Freedom",
-			"revolution": "Radical Change",
-			"reform": "Gradual Progress",
+			"constructivism":         "Social Constructor",
+			"essentialism":           "Natural Order",
+			"communism":              "Workers United",
+			"capitalism":             "Free Markets",
+			"ecology":                "Green Future",
+			"production":             "Progress First",
+			"progressive":            "Forward Thinking",
+			"conservative":           "Traditional Values",
+			"internationalism":       "Global Citizen",
+			"nationalism":            "Nation First",
+			"regulation":             "Guided Economy",
+			"laissez_faire":          "Market Freedom",
+			"revolution":             "Radical Change",
+			"reform":                 "Gradual Progress",
 			"rehabilitative_justice": "Restorative Justice",
-			"punitive_justice": "Law and Order",
-			"anarchism": "No Gods No Masters",
-			"pragmatism": "Practical Solutions",
-			"feminism": "Gender Equality",
+			"punitive_justice":       "Law and Order",
+			"anarchism":              "No Gods No Masters",
+			"pragmatism":             "Practical Solutions",
+			"feminism":               "Gender Equality",
 		}
-		
+
 		sloganParts := []string{}
 		for i, char := range characteristics {
-			if i >= 3 { break }
+			if i >= 3 {
+				break
+			}
 			if sloganText, exists := slogans[char.name]; exists && char.value >= 50 {
 				sloganParts = append(sloganParts, sloganText)
 			}
 		}
-		
+
 		// If no high-scoring characteristics, try with lower threshold
 		if len(sloganParts) == 0 {
 			for i, char := range characteristics {
-				if i >= 3 { break }
+				if i >= 3 {
+					break
+				}
 				if sloganText, exists := slogans[char.name]; exists && char.value >= 30 {
 					sloganParts = append(sloganParts, sloganText)
 				}
 			}
 		}
-		
+
 		var slogan string
 		if len(sloganParts) > 0 {
 			for i, part := range sloganParts {
-				if i > 0 { slogan += " · " }
+				if i > 0 {
+					slogan += " · "
+				}
 				slogan += part
 			}
 		} else {
@@ -1197,13 +1203,13 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 			"monarchism": "Monarchism",
 			"religion":   "Religion",
 		}
-		
+
 		var qualifyingBadges []struct {
 			name  string
 			label string
 			score float64
 		}
-		
+
 		for _, axis := range politiscales.Axes {
 			if axis.Pair == "" { // Unpaired axes only
 				score := results[axis.Name]
@@ -1221,7 +1227,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 				}
 			}
 		}
-		
+
 		// Sort badges by score descending
 		for i := 0; i < len(qualifyingBadges)-1; i++ {
 			for j := i + 1; j < len(qualifyingBadges); j++ {
@@ -1230,7 +1236,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 				}
 			}
 		}
-		
+
 		if len(qualifyingBadges) > 0 {
 			message += "\n**Notable Characteristics:**\n"
 			for _, badge := range qualifyingBadges {

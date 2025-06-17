@@ -259,8 +259,8 @@ func TestENQuestionsMap(t *testing.T) {
 }
 
 func TestARCopyMap(t *testing.T) {
-	// Arabic JSON has no top-level UI keys, so ARCopy should be empty
-	expectedUIElements := 0
+	// Arabic translations now include UI elements
+	expectedUIElements := 10
 	if len(ARCopy) != expectedUIElements {
 		t.Errorf("Expected %d UI elements in ARCopy, got %d", expectedUIElements, len(ARCopy))
 	}

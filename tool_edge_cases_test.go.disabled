@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
-	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v2/political-compass"
-	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/eightvalues"
+	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v3/political-compass"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/politiscales"
 )
 
 // Test handleQuizStatus edge cases to improve coverage

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/politiscales"
 )
 
 func TestPolitiscalesQuiz(t *testing.T) {

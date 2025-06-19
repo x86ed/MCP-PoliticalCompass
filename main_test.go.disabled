@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v2/political-compass"
+	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v3/political-compass"
 )
 
 func TestPoliticalCompassToolStart(t *testing.T) {

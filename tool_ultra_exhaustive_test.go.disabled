@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
-	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/eightvalues"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/politiscales"
 )
 
 // Ultra-exhaustive tests targeting the remaining uncovered code paths

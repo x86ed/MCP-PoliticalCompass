@@ -1,6 +1,7 @@
 package eightvalues
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -98,5 +99,127 @@ func TestSampleQuestions(t *testing.T) {
 		if midQuestion.Index != int32(10) {
 			t.Error("Question 10 should have index 10")
 		}
+	}
+}
+
+func TestGenerateSVG(t *testing.T) {
+	// Test basic SVG generation
+	svg := GenerateSVG(50.0, 50.0, 50.0, 50.0)
+
+	// Check that it returns a valid SVG
+	if !strings.HasPrefix(svg, "<svg") {
+		t.Error("Generated output should start with <svg")
+	}
+	if !strings.HasSuffix(svg, "</svg>") {
+		t.Error("Generated output should end with </svg>")
+	}
+
+	// Check for required SVG attributes
+	if !strings.Contains(svg, `width="800"`) {
+		t.Error("SVG should have width=800")
+	}
+	if !strings.Contains(svg, `height="650"`) {
+		t.Error("SVG should have height=650")
+	}
+
+	// Check for 8values title
+	if !strings.Contains(svg, "8values") {
+		t.Error("SVG should contain 8values title")
+	}
+
+	// Check for axis labels
+	if !strings.Contains(svg, "Economic Axis:") {
+		t.Error("SVG should contain Economic Axis label")
+	}
+	if !strings.Contains(svg, "Diplomatic Axis:") {
+		t.Error("SVG should contain Diplomatic Axis label")
+	}
+	if !strings.Contains(svg, "Government Axis:") {
+		t.Error("SVG should contain Government Axis label")
+	}
+	if !strings.Contains(svg, "Society Axis:") {
+		t.Error("SVG should contain Society Axis label")
+	}
+}
+
+func TestGenerateSVGWithExtremeValues(t *testing.T) {
+	// Test with extreme values (0% and 100%)
+	svg := GenerateSVG(100.0, 0.0, 100.0, 0.0)
+
+	// Should still generate valid SVG
+	if !strings.HasPrefix(svg, "<svg") {
+		t.Error("Generated output should start with <svg")
+	}
+	if !strings.HasSuffix(svg, "</svg>") {
+		t.Error("Generated output should end with </svg>")
+	}
+
+	// Check that percentages appear when > 30%
+	if !strings.Contains(svg, "100.0%") {
+		t.Error("SVG should contain 100.0% for high values")
+	}
+}
+
+func TestGenerateSVGLabeling(t *testing.T) {
+	// Test extreme values to check labeling
+	tests := []struct {
+		name     string
+		econ     float64
+		dipl     float64
+		govt     float64
+		scty     float64
+		expected []string
+	}{
+		{
+			name:     "extreme equality",
+			econ:     100.0,
+			dipl:     50.0,
+			govt:     50.0,
+			scty:     50.0,
+			expected: []string{"Communist"},
+		},
+		{
+			name:     "extreme wealth",
+			econ:     0.0,
+			dipl:     50.0,
+			govt:     50.0,
+			scty:     50.0,
+			expected: []string{"Laissez-Faire"},
+		},
+		{
+			name:     "balanced centrist",
+			econ:     50.0,
+			dipl:     50.0,
+			govt:     50.0,
+			scty:     50.0,
+			expected: []string{"Centrist", "Balanced", "Moderate", "Neutral"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svg := GenerateSVG(tt.econ, tt.dipl, tt.govt, tt.scty)
+
+			for _, expectedLabel := range tt.expected {
+				if !strings.Contains(svg, expectedLabel) {
+					t.Errorf("SVG should contain label '%s' for test '%s'", expectedLabel, tt.name)
+				}
+			}
+		})
+	}
+}
+
+func TestGenerateSVGPercentageDisplay(t *testing.T) {
+	// Test that percentages only appear when > 30%
+	svg := GenerateSVG(25.0, 35.0, 25.0, 35.0)
+
+	// Should not contain 25.0% (below threshold)
+	if strings.Contains(svg, "25.0%") {
+		t.Error("SVG should not contain percentages below 30%")
+	}
+
+	// Should contain 35.0% (above threshold)
+	if !strings.Contains(svg, "35.0%") {
+		t.Error("SVG should contain percentages above 30%")
 	}
 }

@@ -33,12 +33,46 @@ Each axis provides percentage scores and ideological classifications based on yo
 
 ### Politiscales Quiz
 
-The Politiscales quiz offers the most comprehensive political analysis with 117 questions across multiple political dimensions:
+The Politiscales quiz offers the most comprehensive political analysis with 117 questions across multiple political dimensions, faithfully implementing the original PolitiScales methodology:
 
-- **17 political axes** including paired axes like Economy (Communism vs Capitalism), Culture (Progressive vs Conservative), and Identity (Constructivism vs Essentialism)
-- **Multiple language support**: English, French, Spanish, Italian, Arabic, Russian, and Chinese
-- **Specialized indicators** for specific political tendencies like Anarchism, Feminism, and Pragmatism
-- **Sophisticated scoring algorithm** with paired axis normalization and threshold-based indicators
+#### Core Features
+
+- **117 authentic questions** from the original PolitiScales questionnaire
+- **17 political axes** with sophisticated scoring algorithms
+- **Complete multilingual support**: English, French, Spanish, Italian, Arabic, Russian, and Chinese
+- **Authentic scoring implementation** matching the original TypeScript/Vue.js implementation
+- **Professional SVG visualizations** with accurate colors, positioning, and labels
+
+#### Political Dimensions
+
+**Paired Axes (with opposing values):**
+
+- **Identity**: Constructivism ↔ Essentialism
+- **Justice**: Rehabilitative ↔ Punitive  
+- **Culture**: Progressive ↔ Conservative
+- **Globalism**: Internationalism ↔ Nationalism
+- **Economy**: Communism ↔ Capitalism
+- **Markets**: Regulation ↔ Laissez-faire
+- **Environment**: Ecology ↔ Production
+- **Change**: Revolution ↔ Reform
+
+**Unpaired Axes (specialized indicators with thresholds):**
+
+- **Anarchism** (threshold: 0.9) - Anti-state tendencies
+- **Feminism** (threshold: 0.9) - Gender equality advocacy
+- **Conspiracism** (threshold: 0.9) - Conspiracy theory acceptance
+- **Pragmatism** (threshold: 0.5) - Practical over ideological approaches
+- **Veganism** (threshold: 0.5) - Animal rights and dietary ethics
+- **Monarchism** (threshold: 0.5) - Support for monarchical systems
+- **Religion** (threshold: 0.5) - Religious influence in politics
+
+#### Advanced Scoring Features
+
+- **Paired axis normalization** ensuring balanced representation
+- **Neutral value calculation** for incomplete ideological positions
+- **Threshold-based badge system** highlighting specific political tendencies
+- **Unified badge and slogan logic** sourced directly from module data
+- **Dynamic language switching** with complete UI translations
 
 ## Features
 
@@ -88,20 +122,21 @@ The Politiscales quiz offers the most comprehensive political analysis with 117 
 
 #### Politiscales Features
 
-- **104 comprehensive questions** covering 17 distinct political axes
+- **117 comprehensive questions** covering 17 distinct political axes
 - **Multilingual support** with 7 languages: English, French, Spanish, Italian, Arabic, Russian, Chinese
 - **Randomized question order** for unbiased assessment
 - **Five response options**: Strongly Disagree, Disagree, Neutral, Agree, Strongly Agree
 - **Sophisticated scoring algorithm** with paired axis normalization matching the original TypeScript implementation
 - **17 political axes** including both paired and standalone dimensions:
   - **Paired axes**: Identity (Constructivism vs Essentialism), Justice (Rehabilitative vs Punitive), Culture (Progressive vs Conservative), Globalism (Internationalism vs Nationalism), Economy (Communism vs Capitalism), Markets (Regulation vs Laissez-faire), Environment (Ecology vs Production), Change (Revolution vs Reform)
-  - **Unpaired axes (badges)**: Anarchism, Pragmatism, Feminism, Conspiracism, Veganism, Monarchism, Religion
+  - **Unpaired axes (badges)**: Anarchism (0.9), Pragmatism (0.5), Feminism (0.9), Conspiracism (0.9), Veganism (0.5), Monarchism (0.5), Religion (0.5)
 - **Enhanced results display** showing both paired values and neutral states for comprehensive analysis
 - **Threshold-based badge system** that highlights specific political tendencies with proper colors and labels sourced from module data
 - **Consistent SVG and text results** with unified badge logic and neutral state calculations
 - **Real-time progress tracking** with language and completion status
 - **Response distribution analytics** with detailed breakdown by response type
 - **Dynamic language switching** (only available before starting the quiz)
+- **Authentic implementation** faithfully reproducing the original PolitiScales methodology and user experience
 
 ### Visualization Features
 
@@ -541,6 +576,11 @@ The server implements the authentic 8values scoring algorithm:
 
 ## Version History
 
+- **v2.8.9**: Restored original badge thresholds for unpaired axes in PolitiScales (anarchism, feminism, conspiracism: 0.9; pragmatism, veganism, monarchism, religion: 0.5)
+- **v2.8.8**: Enhanced PolitiScales implementation with refactored SVG and text results, unified badge/slogan logic sourced from module data, and cleaned up codebase
+- **v2.8.7**: Major PolitiScales overhaul - complete scoring algorithm refactor to match original TypeScript implementation, improved neutral value calculations, enhanced SVG visualization with proper layout and colors
+- **v2.8.6**: Fixed PolitiScales scoring algorithm with proper paired axis normalization and neutral state handling matching the original Vue.js implementation
+- **v2.8.5**: Added comprehensive PolitiScales testing suite with 100+ test scenarios, improved badge threshold accuracy, and enhanced multilingual support validation
 - **v2.8.4**: Enhanced politiscales functionality with improved neutral state handling, unified badge system sourced from module data, and comprehensive paired axis display in both SVG and text results
 - **v2.8.3**: Complete internationalization of politiscales with full UI and question translations for Arabic, Spanish, French, Italian, Russian, and Chinese
 - **v2.3.0**: Added complete 8values quiz implementation with 70 questions, improved test coverage to 90.9%, and comprehensive SVG visualizations
@@ -570,5 +610,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Political Compass questions and methodology based on the original [Political Compass](https://www.politicalcompass.org/) project
 - 8values questions and methodology based on the original [8values](https://8values.github.io/) project
+- Politiscales questions and methodology based on the original [Politiscales](https://www.politiscales.net/) project
 - Built using the [Model Context Protocol](https://modelcontextprotocol.io/) specification
 - Powered by [mcp-golang](https://github.com/metoro-io/mcp-golang) SDK

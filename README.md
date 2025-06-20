@@ -618,6 +618,54 @@ The server implements the authentic 8values scoring algorithm:
 - **v1.0.1**: Initial bug fixes and improvements
 - **v1.0.0**: Initial release
 
+## Version History
+
+### v3.1.0 (2025-06-19)
+- **Documentation Update**: Comprehensive README update with v3.0+ migration information
+- **Test Suite**: Re-enabled all previously disabled test files
+- **Library Documentation**: Updated all references from `metoro-io/mcp-golang` to `mark3labs/mcp-go`
+- **Installation Guide**: Added v3.0+ installation instructions and migration notes
+- **Quality**: All 150+ tests passing with full coverage
+
+### v3.0.0 (2025-06-19) - Major Migration
+- **🚨 BREAKING CHANGE**: Migrated from `metoro-io/mcp-golang` to `mark3labs/mcp-go`
+- **Module Path**: Updated to `/v3` following Go module versioning conventions
+- **Explicit Schemas**: Removed reflection-based schemas for explicit tool definitions
+- **Handler Signatures**: Updated all tool handlers to new API patterns
+- **Error Handling**: Enhanced error reporting and validation
+- **Performance**: Improved performance with modern MCP library
+- **Testing**: All test files updated and verified working
+- **Architecture**: Complete rewrite of server initialization and tool registration
+
+### v2.9.1 (Previous Release)
+- Final release using `metoro-io/mcp-golang` library
+- Stable implementation with all features working
+- Full test coverage across all quiz types
+
+### v2.x Series Highlights
+- **v2.9.0**: Enhanced Politiscales multilingual support
+- **v2.8.x**: Improved SVG visualizations and scoring algorithms
+- **v2.7.x**: Added comprehensive 8values quiz implementation
+- **v2.6.x**: Enhanced Political Compass functionality
+- **v2.0.0**: Initial stable release with all three quiz types
+
+### v1.x Series
+- **v1.1.x**: Added 8values quiz support
+- **v1.0.x**: Initial Political Compass implementation
+
+### Migration Notes
+
+**Upgrading to v3.0+:**
+- Update import paths to include `/v3`: `github.com/x86ed/MCP-PoliticalCompass/v3`
+- No functional changes to quiz behavior or API
+- Enhanced performance and reliability with new MCP library
+- All existing tool names and parameters remain the same
+
+**From v2.x to v3.0+:**
+- Module path change required due to major version bump
+- Internal architecture updated but external API unchanged
+- Recommended for all new installations
+
 ## Contributing
 
 1. Fork the repository

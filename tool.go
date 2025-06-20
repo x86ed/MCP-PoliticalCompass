@@ -1,16 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
 
-	mcp "github.com/metoro-io/mcp-golang"
-	"github.com/x86ed/MCP-PoliticalCompass/v2/eightvalues"
-	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v2/political-compass"
-	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/eightvalues"
+	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v3/political-compass"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/politiscales"
 )
 
 // Global state to track the quiz progress
@@ -133,7 +134,13 @@ func initializeQuestions() {
 }
 
 // Handler function for political compass tool
-func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error) {
+func handlePoliticalCompass(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract the answer argument
+	answer, err := request.RequireString("answer")
+	if err != nil {
+		return mcp.NewToolResultError("Answer is required"), nil
+	}
+
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -151,7 +158,7 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 
 		// Parse the response
 		var response politicalcompass.Response
-		switch args.Response {
+		switch answer {
 		case "Strongly Disagree", "strongly_disagree":
 			response = politicalcompass.StronglyDisagree
 		case "Disagree", "disagree":
@@ -161,7 +168,7 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 		case "Strongly Agree", "strongly_agree":
 			response = politicalcompass.StronglyAgree
 		default:
-			return nil, fmt.Errorf("invalid response: %s. Please use one of: strongly_disagree, disagree, agree, strongly_agree", args.Response)
+			return mcp.NewToolResultError(fmt.Sprintf("invalid response: %s. Please use one of: strongly_disagree, disagree, agree, strongly_agree", answer)), nil
 		}
 
 		// Calculate and accumulate scores
@@ -220,7 +227,7 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 			"Thank you for completing the Political Compass quiz!",
 			questionCount, avgEconomicScore, avgSocialScore, quadrant, svg)
 
-		return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+		return mcp.NewToolResultText(message), nil
 	}
 
 	// Get the next question
@@ -252,11 +259,11 @@ func handlePoliticalCompass(args PoliticalCompassArgs) (*mcp.ToolResponse, error
 			questionCount, len(politicalcompass.AllQuestions), question.Text)
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResultText(message), nil
 }
 
 // Handler function for reset quiz tool
-func handleResetQuiz(args ResetQuizArgs) (*mcp.ToolResponse, error) {
+func handleResetQuiz(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -272,7 +279,7 @@ func handleResetQuiz(args ResetQuizArgs) (*mcp.ToolResponse, error) {
 		"All progress has been cleared. You can now start a fresh quiz by calling the political_compass tool.\n\n" +
 		"Call the political_compass tool to begin a new quiz."
 
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResultText(message), nil
 }
 
 // generatePoliticalCompassSVG creates an SVG visualization of the user's political position
@@ -397,7 +404,7 @@ func generatePoliticalCompassSVG(economicScore, socialScore float64) string {
 }
 
 // handleQuizStatus shows the current quiz progress and statistics
-func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
+func handleQuizStatus(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -486,7 +493,7 @@ func handleQuizStatus(args QuizStatusArgs) (*mcp.ToolResponse, error) {
 		statusText += "\n*✅ Quiz complete! All questions have been answered.*"
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+	return mcp.NewToolResultText(statusText), nil
 }
 
 // Helper function for absolute value
@@ -548,7 +555,13 @@ func initializeEightValuesQuestions() {
 }
 
 // Handler function for 8values quiz tool
-func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
+func handleEightValues(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract the answer argument
+	answer, err := request.RequireString("answer")
+	if err != nil {
+		return mcp.NewToolResultError("Answer is required"), nil
+	}
+
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -566,7 +579,7 @@ func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
 
 		// Parse the response and get multiplier
 		var multiplier float64
-		switch args.Response {
+		switch answer {
 		case "strongly_disagree":
 			multiplier = eightvalues.StronglyDisagree
 		case "disagree":
@@ -578,7 +591,7 @@ func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
 		case "strongly_agree":
 			multiplier = eightvalues.StronglyAgree
 		default:
-			return nil, fmt.Errorf("invalid response: %s. Please use one of: strongly_disagree, disagree, neutral, agree, strongly_agree", args.Response)
+			return mcp.NewToolResultError(fmt.Sprintf("invalid response: %s. Please use one of: strongly_disagree, disagree, neutral, agree, strongly_agree", answer)), nil
 		}
 
 		// Calculate and accumulate scores using the 8values scoring logic
@@ -663,7 +676,7 @@ func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
 			sctyPercentage, societyLabel,
 			svg)
 
-		return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+		return mcp.NewToolResultText(message), nil
 	}
 
 	// Get the next question
@@ -695,11 +708,11 @@ func handleEightValues(args EightValuesArgs) (*mcp.ToolResponse, error) {
 			eightValuesQuestionCount, len(eightvalues.Questions), question.Text)
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResultText(message), nil
 }
 
 // Handler function for reset 8values quiz tool
-func handleResetEightValues(args ResetEightValuesArgs) (*mcp.ToolResponse, error) {
+func handleResetEightValues(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -710,11 +723,11 @@ func handleResetEightValues(args ResetEightValuesArgs) (*mcp.ToolResponse, error
 		"All progress has been cleared. You can now start a fresh 8values quiz by calling the eight_values tool.\n\n" +
 		"Call the eight_values tool to begin a new quiz."
 
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResultText(message), nil
 }
 
 // handleEightValuesStatus shows the current 8values quiz progress and statistics
-func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, error) {
+func handleEightValuesStatus(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -887,7 +900,7 @@ func handleEightValuesStatus(args EightValuesStatusArgs) (*mcp.ToolResponse, err
 		statusText += "\n*✅ Quiz complete! All questions have been answered.*"
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+	return mcp.NewToolResultText(statusText), nil
 }
 
 // Calculate politiscales results based on current quiz state
@@ -989,7 +1002,13 @@ func calculatePolitiscalesResultsInternal() map[string]float64 {
 }
 
 // Handler function for politiscales quiz tool
-func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
+func handlePolitiscales(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract the answer argument
+	answer, err := request.RequireString("answer")
+	if err != nil {
+		return mcp.NewToolResultError("Answer is required"), nil
+	}
+
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -1005,9 +1024,9 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 		lastQuestionIndex := politiscalesShuffledQuestions[politiscalesCurrentIndex-1]
 		lastQuestion := politiscales.Questions[lastQuestionIndex]
 
-		// Parse the response and get multiplier
+		// Parse the response
 		var responseValue float64
-		switch args.Response {
+		switch answer {
 		case "strongly_disagree":
 			responseValue = -1.0 // StronglyDisagree
 		case "disagree":
@@ -1019,7 +1038,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 		case "strongly_agree":
 			responseValue = 1.0 // StronglyAgree
 		default:
-			return nil, fmt.Errorf("invalid response: %s. Please use: strongly_disagree, disagree, neutral, agree, strongly_agree", args.Response)
+			return mcp.NewToolResultError(fmt.Sprintf("invalid response: %s. Please use: strongly_disagree, disagree, neutral, agree, strongly_agree", answer)), nil
 		}
 
 		// Store the response in quiz state
@@ -1050,7 +1069,7 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 
 			message += "\nThank you for completing the Politiscales quiz!"
 
-			return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+			return mcp.NewToolResultText(message), nil
 		}
 	} else {
 		isFirstQuestion = true
@@ -1076,11 +1095,11 @@ func handlePolitiscales(args PolitiscalesArgs) (*mcp.ToolResponse, error) {
 		responseText = fmt.Sprintf("✅ Response recorded!\n\n%s", responseText)
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(responseText)), nil
+	return mcp.NewToolResultText(responseText), nil
 }
 
 // Handler function for reset politiscales quiz tool
-func handleResetPolitiscales(args ResetPolitiscalesArgs) (*mcp.ToolResponse, error) {
+func handleResetPolitiscales(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -1091,11 +1110,11 @@ func handleResetPolitiscales(args ResetPolitiscalesArgs) (*mcp.ToolResponse, err
 		"All progress has been cleared. You can now start a fresh quiz by calling the politiscales tool.\n\n" +
 		"Call the politiscales tool to begin a new quiz."
 
-	return mcp.NewToolResponse(mcp.NewTextContent(message)), nil
+	return mcp.NewToolResultText(message), nil
 }
 
 // Handler function for politiscales status tool
-func handlePolitiscalesStatus(args PolitiscalesStatusArgs) (*mcp.ToolResponse, error) {
+func handlePolitiscalesStatus(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -1191,7 +1210,7 @@ func handlePolitiscalesStatus(args PolitiscalesStatusArgs) (*mcp.ToolResponse, e
 		statusText += "\n*✅ Quiz complete! All questions have been answered.*"
 	}
 
-	return mcp.NewToolResponse(mcp.NewTextContent(statusText)), nil
+	return mcp.NewToolResultText(statusText), nil
 }
 
 // Initialize politiscales questions (randomize order)
@@ -1254,7 +1273,13 @@ func getPolitiscalesQuestionText(key string) string {
 }
 
 // Handler function for setting politiscales language
-func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolResponse, error) {
+func handleSetPolitiscalesLanguage(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract the language argument
+	language, err := request.RequireString("language")
+	if err != nil {
+		return mcp.NewToolResultError("Language is required"), nil
+	}
+
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -1262,33 +1287,31 @@ func handleSetPolitiscalesLanguage(args SetPolitiscalesLanguageArgs) (*mcp.ToolR
 	validLanguages := []string{"en", "fr", "es", "it", "ar", "ru", "zh"}
 	isValid := false
 	for _, lang := range validLanguages {
-		if args.Language == lang {
+		if language == lang {
 			isValid = true
 			break
 		}
 	}
 
 	if !isValid {
-		return nil, fmt.Errorf("invalid language '%s'. Available languages: %s",
-			args.Language, strings.Join(validLanguages, ", "))
+		return mcp.NewToolResultError(fmt.Sprintf("Invalid language: %s. Valid languages are: %s",
+			language, strings.Join(validLanguages, ", "))), nil
 	}
 
 	// Check if quiz is in progress
 	if len(politiscalesQuizState.Responses) > 0 {
-		return mcp.NewToolResponse(mcp.NewTextContent(
+		return mcp.NewToolResultText(
 			fmt.Sprintf("Cannot change language during quiz! %d questions answered.\n"+
 				"Current language: %s → Requested: %s\n\n"+
 				"Please reset the quiz first if you want to change the language.",
-				len(politiscalesQuizState.Responses), politiscalesLanguage, args.Language),
-		)), nil
+				len(politiscalesQuizState.Responses), politiscalesLanguage, language)), nil
 	}
 
 	oldLanguage := politiscalesLanguage
-	politiscalesLanguage = args.Language
+	politiscalesLanguage = language
 
-	return mcp.NewToolResponse(mcp.NewTextContent(
+	return mcp.NewToolResultText(
 		fmt.Sprintf("Language Changed! From %s to %s\n\n"+
 			"The next Politiscales quiz will be conducted in %s.",
-			oldLanguage, args.Language, args.Language),
-	)), nil
+			oldLanguage, language, language)), nil
 }

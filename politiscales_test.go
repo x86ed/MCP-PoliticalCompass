@@ -1,9 +1,10 @@
 package main
 
 import (
+	"context"
 	"testing"
 
-	"github.com/x86ed/MCP-PoliticalCompass/v2/politiscales"
+	"github.com/x86ed/MCP-PoliticalCompass/v3/politiscales"
 )
 
 func TestPolitiscalesQuiz(t *testing.T) {
@@ -20,8 +21,7 @@ func TestPolitiscalesQuiz(t *testing.T) {
 	}
 
 	// Test language setting
-	args := SetPolitiscalesLanguageArgs{Language: "fr"}
-	response, err := handleSetPolitiscalesLanguage(args)
+	response, err := handleSetPolitiscalesLanguage(context.Background(), createMockRequest("set_politiscales_language", map[string]interface{}{"language": "fr"}))
 	if err != nil {
 		t.Errorf("Error setting language: %v", err)
 	}
@@ -35,22 +35,22 @@ func TestPolitiscalesQuiz(t *testing.T) {
 	}
 
 	// Test invalid language
-	invalidArgs := SetPolitiscalesLanguageArgs{Language: "invalid"}
-	_, err = handleSetPolitiscalesLanguage(invalidArgs)
-	if err == nil {
-		t.Error("Expected error for invalid language, got nil")
+	invalidResponse, err := handleSetPolitiscalesLanguage(context.Background(), createMockRequest("set_politiscales_language", map[string]interface{}{"language": "invalid"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !isErrorResult(invalidResponse) {
+		t.Error("Expected error result for invalid language")
 	}
 
 	// Reset language to English for quiz test
-	englishArgs := SetPolitiscalesLanguageArgs{Language: "en"}
-	_, err = handleSetPolitiscalesLanguage(englishArgs)
+	_, err = handleSetPolitiscalesLanguage(context.Background(), createMockRequest("set_politiscales_language", map[string]interface{}{"language": "en"}))
 	if err != nil {
 		t.Errorf("Error setting language to English: %v", err)
 	}
 
 	// Test quiz start
-	quizArgs := PolitiscalesArgs{Response: "agree"}
-	response, err = handlePolitiscales(quizArgs)
+	response, err = handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 	if err != nil {
 		t.Errorf("Error starting quiz: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestPolitiscalesQuiz(t *testing.T) {
 	}
 
 	// Test status
-	statusResponse, err := handlePolitiscalesStatus(PolitiscalesStatusArgs{})
+	statusResponse, err := handlePolitiscalesStatus(context.Background(), createMockRequest("politiscales_status", map[string]interface{}{}))
 	if err != nil {
 		t.Errorf("Error getting status: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestPolitiscalesQuiz(t *testing.T) {
 	}
 
 	// Test reset
-	resetResponse, err := handleResetPolitiscales(ResetPolitiscalesArgs{})
+	resetResponse, err := handleResetPolitiscales(context.Background(), createMockRequest("reset_politiscales", map[string]interface{}{}))
 	if err != nil {
 		t.Errorf("Error resetting quiz: %v", err)
 	}

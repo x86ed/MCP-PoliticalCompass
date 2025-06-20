@@ -2,6 +2,16 @@
 
 A Model Context Protocol (MCP) server that provides interactive political quiz tools for baselining the political beliefs of AI agents and users. This server implements three comprehensive political questionnaires: the classic Political Compass (62 questions), the detailed 8values quiz (70 questions), and the multilingual Politiscales quiz (117 questions).
 
+## Version 3.0+ Migration
+
+**Version 3.0.0** represents a major migration from the legacy `metoro-io/mcp-golang` library to the modern `mark3labs/mcp-go` library. This migration includes:
+
+- **New MCP Library**: Migrated to `mark3labs/mcp-go` for better performance and maintainability
+- **Explicit Schemas**: Removed reflection-based schemas in favor of explicit tool definitions
+- **Enhanced Error Handling**: Improved error reporting and validation
+- **Full Test Coverage**: All 150+ tests updated and passing
+- **Breaking Changes**: Module path updated to `/v3` following Go module versioning conventions
+
 ## Overview
 
 This MCP server provides three distinct political assessment tools:
@@ -407,8 +417,24 @@ The project maintains **90.9% code coverage** with comprehensive testing:
 
 ### Key Dependencies
 
-- **[mcp-golang](https://github.com/metoro-io/mcp-golang)**: Official Go MCP SDK
+- **[mcp-go](https://github.com/mark3labs/mcp-go)**: Modern Go MCP SDK (v3.0+ migration)
 - **Standard Go libraries**: No external runtime dependencies
+
+### Version 3.0+ Installation
+
+For the latest version (v3.0+), ensure you're using the correct module path:
+
+```go
+import "github.com/x86ed/MCP-PoliticalCompass/v3"
+```
+
+### Migration from v2.x
+
+If upgrading from v2.x, note the breaking changes in v3.0+:
+- Module path changed to `/v3`
+- Migrated to `mark3labs/mcp-go` library
+- Updated tool schemas and handler signatures
+- See the [v3.0.0 release notes](https://github.com/x86ed/MCP-PoliticalCompass/releases/tag/v3.0.0) for full details
 
 ### Release Process
 
@@ -612,4 +638,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 8values questions and methodology based on the original [8values](https://8values.github.io/) project
 - Politiscales questions and methodology based on the original [Politiscales](https://www.politiscales.net/) project
 - Built using the [Model Context Protocol](https://modelcontextprotocol.io/) specification
-- Powered by [mcp-golang](https://github.com/metoro-io/mcp-golang) SDK
+- Powered by [mcp-go](https://github.com/mark3labs/mcp-go) SDK (v3.0+)

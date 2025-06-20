@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	
+	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v3/political-compass"
 )
 
 func TestSVGGeneration(t *testing.T) {
@@ -22,7 +24,7 @@ func TestSVGGeneration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			svg := generatePoliticalCompassSVG(tc.economic, tc.social)
+			svg := politicalcompass.GenerateSVG(tc.economic, tc.social)
 
 			// Basic validation
 			if len(svg) == 0 {

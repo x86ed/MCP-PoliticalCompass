@@ -288,7 +288,7 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 }
 
 // Test SVG generation edge cases
-func TestGeneratePoliticalCompassSVGEdgeCases(t *testing.T) {
+func TestPoliticalCompassSVGEdgeCases(t *testing.T) {
 	testCases := []struct {
 		name          string
 		economic      float64
@@ -323,7 +323,7 @@ func TestGeneratePoliticalCompassSVGEdgeCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			svg := generatePoliticalCompassSVG(tc.economic, tc.social)
+			svg := politicalcompass.GenerateSVG(tc.economic, tc.social)
 
 			if svg == "" {
 				t.Error("Expected non-empty SVG")

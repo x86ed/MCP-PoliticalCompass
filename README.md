@@ -168,7 +168,7 @@ The Politiscales quiz offers the most comprehensive political analysis with 117 
 
 ### Example Interactions
 
-#### Political Compass Quiz
+#### Political Compass Usage Example
 
 **Starting the Political Compass quiz:**
 
@@ -190,7 +190,7 @@ Response: "strongly_agree"
 Tool: quiz_status
 ```
 
-#### 8values Quiz
+#### 8values Usage Example
 
 **Starting the 8values quiz:**
 
@@ -212,7 +212,7 @@ Response: "agree"
 Tool: eight_values_status
 ```
 
-#### Politiscales Quiz
+#### Politiscales Usage Example
 
 **Setting language for Politiscales quiz:**
 
@@ -243,7 +243,7 @@ Tool: politiscales_status
 
 ### Quiz Results
 
-#### Political Compass completion provides:
+#### Political Compass Completion Results
 
 - Final Economic Score (e.g., -1.23)
 - Final Social Score (e.g., 2.45)
@@ -251,7 +251,7 @@ Tool: politiscales_status
 - **Interactive SVG compass visualization** showing position on political grid
 - Total questions answered
 
-#### 8values completion provides:
+#### 8values Completion Results
 
 - Economic Axis percentage and classification (Socialist/Capitalist)
 - Diplomatic Axis percentage and classification (Internationalist/Nationalist)
@@ -260,7 +260,7 @@ Tool: politiscales_status
 - **Interactive SVG bar chart visualization** showing all four axis scores
 - Total questions answered and response distribution
 
-#### Politiscales completion provides:
+#### Politiscales Completion Results
 
 - **Paired axis results** with dominant tendency for each political dimension
 - **Special indicator scores** for specific political tendencies (Anarchism, Feminism, etc.)
@@ -431,6 +431,7 @@ import "github.com/x86ed/MCP-PoliticalCompass/v3"
 ### Migration from v2.x
 
 If upgrading from v2.x, note the breaking changes in v3.0+:
+
 - Module path changed to `/v3`
 - Migrated to `mark3labs/mcp-go` library
 - Updated tool schemas and handler signatures
@@ -602,25 +603,8 @@ The server implements the authentic 8values scoring algorithm:
 
 ## Version History
 
-- **v2.8.9**: Restored original badge thresholds for unpaired axes in PolitiScales (anarchism, feminism, conspiracism: 0.9; pragmatism, veganism, monarchism, religion: 0.5)
-- **v2.8.8**: Enhanced PolitiScales implementation with refactored SVG and text results, unified badge/slogan logic sourced from module data, and cleaned up codebase
-- **v2.8.7**: Major PolitiScales overhaul - complete scoring algorithm refactor to match original TypeScript implementation, improved neutral value calculations, enhanced SVG visualization with proper layout and colors
-- **v2.8.6**: Fixed PolitiScales scoring algorithm with proper paired axis normalization and neutral state handling matching the original Vue.js implementation
-- **v2.8.5**: Added comprehensive PolitiScales testing suite with 100+ test scenarios, improved badge threshold accuracy, and enhanced multilingual support validation
-- **v2.8.4**: Enhanced politiscales functionality with improved neutral state handling, unified badge system sourced from module data, and comprehensive paired axis display in both SVG and text results
-- **v2.8.3**: Complete internationalization of politiscales with full UI and question translations for Arabic, Spanish, French, Italian, Russian, and Chinese
-- **v2.3.0**: Added complete 8values quiz implementation with 70 questions, improved test coverage to 90.9%, and comprehensive SVG visualizations
-- **v2.2.0**: Added quiz status tool with progress tracking and thread safety improvements
-- **v1.0.5**: Added interactive SVG visualization for quiz results
-- **v1.0.4**: Fixed README.md markdown formatting issues
-- **v1.0.3**: Significantly improved test coverage to 88.3%
-- **v1.0.2**: Fixed scoring algorithm to match original Political Compass
-- **v1.0.1**: Initial bug fixes and improvements
-- **v1.0.0**: Initial release
-
-## Version History
-
 ### v3.1.0 (2025-06-19)
+
 - **Documentation Update**: Comprehensive README update with v3.0+ migration information
 - **Test Suite**: Re-enabled all previously disabled test files
 - **Library Documentation**: Updated all references from `metoro-io/mcp-golang` to `mark3labs/mcp-go`
@@ -628,6 +612,7 @@ The server implements the authentic 8values scoring algorithm:
 - **Quality**: All 150+ tests passing with full coverage
 
 ### v3.0.0 (2025-06-19) - Major Migration
+
 - **🚨 BREAKING CHANGE**: Migrated from `metoro-io/mcp-golang` to `mark3labs/mcp-go`
 - **Module Path**: Updated to `/v3` following Go module versioning conventions
 - **Explicit Schemas**: Removed reflection-based schemas for explicit tool definitions
@@ -637,31 +622,38 @@ The server implements the authentic 8values scoring algorithm:
 - **Testing**: All test files updated and verified working
 - **Architecture**: Complete rewrite of server initialization and tool registration
 
-### v2.9.1 (Previous Release)
-- Final release using `metoro-io/mcp-golang` library
-- Stable implementation with all features working
-- Full test coverage across all quiz types
-
 ### v2.x Series Highlights
-- **v2.9.0**: Enhanced Politiscales multilingual support
-- **v2.8.x**: Improved SVG visualizations and scoring algorithms
-- **v2.7.x**: Added comprehensive 8values quiz implementation
-- **v2.6.x**: Enhanced Political Compass functionality
-- **v2.0.0**: Initial stable release with all three quiz types
+
+- **v2.8.9**: Restored original badge thresholds for unpaired axes in PolitiScales (anarchism, feminism, conspiracism: 0.9; pragmatism, veganism, monarchism, religion: 0.5)
+- **v2.8.8**: Enhanced PolitiScales implementation with refactored SVG and text results, unified badge/slogan logic sourced from module data, and cleaned up codebase
+- **v2.8.7**: Major PolitiScales overhaul - complete scoring algorithm refactor to match original TypeScript implementation, improved neutral value calculations, enhanced SVG visualization with proper layout and colors
+- **v2.8.6**: Fixed PolitiScales scoring algorithm with proper paired axis normalization and neutral state handling matching the original Vue.js implementation
+- **v2.8.5**: Added comprehensive PolitiScales testing suite with 100+ test scenarios, improved badge threshold accuracy, and enhanced multilingual support validation
+- **v2.8.4**: Enhanced politiscales functionality with improved neutral state handling, unified badge system sourced from module data, and comprehensive paired axis display in both SVG and text results
+- **v2.8.3**: Complete internationalization of politiscales with full UI and question translations for Arabic, Spanish, French, Italian, Russian, and Chinese
+- **v2.3.0**: Added complete 8values quiz implementation with 70 questions, improved test coverage to 90.9%, and comprehensive SVG visualizations
+- **v2.2.0**: Added quiz status tool with progress tracking and thread safety improvements
 
 ### v1.x Series
-- **v1.1.x**: Added 8values quiz support
-- **v1.0.x**: Initial Political Compass implementation
+
+- **v1.0.5**: Added interactive SVG visualization for quiz results
+- **v1.0.4**: Fixed README.md markdown formatting issues
+- **v1.0.3**: Significantly improved test coverage to 88.3%
+- **v1.0.2**: Fixed scoring algorithm to match original Political Compass
+- **v1.0.1**: Initial bug fixes and improvements
+- **v1.0.0**: Initial release
 
 ### Migration Notes
 
 **Upgrading to v3.0+:**
+
 - Update import paths to include `/v3`: `github.com/x86ed/MCP-PoliticalCompass/v3`
 - No functional changes to quiz behavior or API
 - Enhanced performance and reliability with new MCP library
 - All existing tool names and parameters remain the same
 
 **From v2.x to v3.0+:**
+
 - Module path change required due to major version bump
 - Internal architecture updated but external API unchanged
 - Recommended for all new installations

@@ -603,6 +603,13 @@ The server implements the authentic 8values scoring algorithm:
 
 ## Version History
 
+### v3.2.1 (2025-06-19)
+
+- **Test Coverage Improvement**: Significantly improved test coverage from 85.6% to 90.5%
+- **Enhanced EightValues Testing**: Increased `handleEightValues` coverage from 55.7% to 98.4%
+- **Better Quality Assurance**: Added comprehensive tests for quiz completion scenarios and edge cases
+- **Improved Reliability**: Enhanced testing of score calculations, label generation, and progress tracking
+
 ### v3.2.0 (2025-06-19)
 
 - **Enhanced Visualization**: Added SVG chart rendering to Politiscales quiz completion

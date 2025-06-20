@@ -243,6 +243,12 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 				if !strings.Contains(content, "Your Political Profile:") {
 					t.Error("Expected political profile in completion")
 				}
+				if !strings.Contains(content, "<svg") {
+					t.Error("Expected SVG chart in politiscales completion")
+				}
+				if !strings.Contains(content, "Render the SVG chart above") {
+					t.Error("Expected SVG rendering instructions in politiscales completion")
+				}
 			}
 		}
 	})

@@ -603,6 +603,13 @@ The server implements the authentic 8values scoring algorithm:
 
 ## Version History
 
+### v3.2.0 (2025-06-19)
+
+- **Enhanced Visualization**: Added SVG chart rendering to Politiscales quiz completion
+- **Consistent User Experience**: All three quizzes (Political Compass, 8Values, Politiscales) now include visual charts
+- **Improved Instructions**: Added clear SVG rendering instructions for better user experience
+- **Test Coverage**: Updated tests to verify SVG inclusion in all quiz completions
+
 ### v3.1.0 (2025-06-19)
 
 - **Documentation Update**: Comprehensive README update with v3.0+ migration information

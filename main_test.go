@@ -514,8 +514,8 @@ func TestDetailedOutputValidation(t *testing.T) {
 		t.Error("Social score explanation is incorrect or missing")
 	}
 
-	if !strings.Contains(content, "Your Political Quadrant: Libertarian Left") {
-		t.Error("Expected Libertarian Left quadrant for positive economic and social scores")
+	if !strings.Contains(content, "Your Political Quadrant: Libertarian Right") {
+		t.Error("Expected Libertarian Right quadrant for positive economic (1.50=Right) and social (1.20=Libertarian) scores")
 	}
 
 	// Check that the scores are displayed correctly

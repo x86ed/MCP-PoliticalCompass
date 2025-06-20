@@ -1,5 +1,7 @@
 package politiscales
 
+import "fmt"
+
 // Response values for question answers
 // These correspond to the button onclick values in the UI
 const (
@@ -222,4 +224,244 @@ var Axes = []Axis{
 		Threshold: 0.5,
 		Slogan:    "Faithful Believer",
 	},
+}
+
+// Generate SVG results display matching the original PolitiScales format
+func GeneratePolitiscalesResultsSVG(results map[string]float64) string {
+	// Define the axis pairs in display order using data from politiscales module
+	// But maintain specific display order and labels for consistency
+	axisPairs := []struct {
+		leftAxis, rightAxis   string
+		leftLabel, rightLabel string
+		leftColor, rightColor string
+	}{
+		{"constructivism", "essentialism", "Constructivism", "Essentialism", "#a425b6", "#34b634"},
+		{"rehabilitative_justice", "punitive_justice", "Rehabilitative Justice", "Punitive Justice", "#14bee1", "#e6cc27"},
+		{"progressive", "conservative", "Progressive", "Conservative", "#850083", "#970000"},
+		{"internationalism", "nationalism", "Internationalism", "Nationalism", "#3e6ffd", "#ff8500"},
+		{"communism", "capitalism", "Communism", "Capitalism", "#cc0000", "#ffb800"},
+		{"regulation", "laissez_faire", "Regulation", "Laissez-faire", "#269B32", "#6608C0"},
+		{"ecology", "production", "Ecology", "Production", "#a0e90d", "#4deae9"},
+		{"revolution", "reform", "Revolution", "Reform", "#eb1a66", "#0ee4c8"},
+	}
+
+	// Count qualifying badges to calculate required height
+	var qualifyingBadges []struct {
+		name  string
+		label string
+		score float64
+		color string
+	}
+
+	for _, axis := range Axes {
+		if axis.Pair == "" { // Unpaired axes only
+			score := results[axis.Name]
+			threshold := axis.Threshold * 100
+			if score >= threshold && score > 0 {
+				label := axis.Label
+				if label == "" {
+					label = axis.Name // Fallback to axis name if no label
+				}
+				color := axis.Color
+				if color == "" {
+					color = "#666666" // Default color if none specified
+				}
+				qualifyingBadges = append(qualifyingBadges, struct {
+					name  string
+					label string
+					score float64
+					color string
+				}{axis.Name, label, score, color})
+			}
+		}
+	}
+
+	// Sort badges by score descending
+	for i := 0; i < len(qualifyingBadges)-1; i++ {
+		for j := i + 1; j < len(qualifyingBadges); j++ {
+			if qualifyingBadges[j].score > qualifyingBadges[i].score {
+				qualifyingBadges[i], qualifyingBadges[j] = qualifyingBadges[j], qualifyingBadges[i]
+			}
+		}
+	}
+
+	// Calculate required height: base + axes + spacing + badges section
+	baseHeight := 600
+	badgesHeight := 0
+	if len(qualifyingBadges) > 0 {
+		badgesHeight = 90 + (len(qualifyingBadges) * 25) // Header + badges
+	}
+	totalHeight := baseHeight + badgesHeight
+
+	svg := fmt.Sprintf(`<svg width="800" height="%d" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .axis-label { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
+      .percentage-text { font-family: Arial, sans-serif; font-size: 12px; fill: white; text-anchor: middle; }
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="%d" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" class="title" fill="#333">PolitiScales Results</text>`, totalHeight, totalHeight)
+
+	y := 80
+	for _, pair := range axisPairs {
+		leftScore := results[pair.leftAxis]
+		rightScore := results[pair.rightAxis]
+
+		// Calculate neutral space
+		total := leftScore + rightScore
+		neutral := 100 - total
+
+		// Calculate widths for 600px bar
+		barWidth := 600
+		leftWidth := int((leftScore / 100) * float64(barWidth))
+		rightWidth := int((rightScore / 100) * float64(barWidth))
+		neutralWidth := barWidth - leftWidth - rightWidth
+
+		if neutralWidth < 0 {
+			neutralWidth = 0
+		}
+
+		// Axis labels
+		svg += fmt.Sprintf(`
+  <!-- %s vs %s -->
+  <text x="100" y="%d" class="axis-label" fill="#333" text-anchor="end">%s</text>
+  <text x="700" y="%d" class="axis-label" fill="#333">%s</text>`,
+			pair.leftLabel, pair.rightLabel, y+15, pair.leftLabel, y+15, pair.rightLabel)
+
+		// Progress bar
+		barY := y + 20
+		currentX := 100
+
+		// Left side
+		if leftWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="%s"/>
+  <text x="%d" y="%d" class="percentage-text">%.0f%%</text>`,
+				currentX, barY, leftWidth, pair.leftColor,
+				currentX+leftWidth/2, barY+20, leftScore)
+		}
+		currentX += leftWidth
+
+		// Neutral section
+		if neutralWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="#e0e0e0"/>
+  <text x="%d" y="%d" class="percentage-text" fill="#666">%.0f%%</text>`,
+				currentX, barY, neutralWidth,
+				currentX+neutralWidth/2, barY+20, neutral)
+		}
+		currentX += neutralWidth
+
+		// Right side
+		if rightWidth > 0 {
+			svg += fmt.Sprintf(`
+  <rect x="%d" y="%d" width="%d" height="30" fill="%s"/>
+  <text x="%d" y="%d" class="percentage-text">%.0f%%</text>`,
+				currentX, barY, rightWidth, pair.rightColor,
+				currentX+rightWidth/2, barY+20, rightScore)
+		}
+
+		y += 65
+	}
+
+	// Add slogan section
+	y += 20
+
+	// Generate slogan based on top characteristics using data from politiscales module
+	type characteristic struct {
+		name  string
+		value float64
+	}
+
+	var characteristics []characteristic
+	for name, value := range results {
+		if value > 0 {
+			characteristics = append(characteristics, characteristic{name, value})
+		}
+	}
+
+	// Sort by value descending
+	for i := 0; i < len(characteristics)-1; i++ {
+		for j := i + 1; j < len(characteristics); j++ {
+			if characteristics[j].value > characteristics[i].value {
+				characteristics[i], characteristics[j] = characteristics[j], characteristics[i]
+			}
+		}
+	}
+
+	// Create slogans map from module data
+	slogans := make(map[string]string)
+	for _, axis := range Axes {
+		if axis.Slogan != "" {
+			slogans[axis.Name] = axis.Slogan
+		}
+	}
+
+	sloganParts := []string{}
+	for i, char := range characteristics {
+		if i >= 3 {
+			break
+		}
+		if sloganText, exists := slogans[char.name]; exists && char.value >= 50 {
+			sloganParts = append(sloganParts, sloganText)
+		}
+	}
+
+	// If no high-scoring characteristics, try with lower threshold
+	if len(sloganParts) == 0 {
+		for i, char := range characteristics {
+			if i >= 3 {
+				break
+			}
+			if sloganText, exists := slogans[char.name]; exists && char.value >= 30 {
+				sloganParts = append(sloganParts, sloganText)
+			}
+		}
+	}
+
+	var slogan string
+	if len(sloganParts) > 0 {
+		for i, part := range sloganParts {
+			if i > 0 {
+				slogan += " · "
+			}
+			slogan += part
+		}
+	} else {
+		slogan = "Political Moderate"
+	}
+
+	svg += fmt.Sprintf(`
+  <text x="400" y="%d" class="title" fill="#333" font-size="18">Political Identity</text>
+  <text x="400" y="%d" class="axis-label" fill="#666" font-size="14" text-anchor="middle">%s</text>`,
+		y, y+25, slogan)
+
+	// Add bonus characteristics section
+	y += 50
+	svg += fmt.Sprintf(`
+  <text x="400" y="%d" class="title" fill="#333" font-size="18">Additional Characteristics</text>`, y)
+
+	// Use the badges we already calculated
+	bonusY := y + 40
+
+	displayedBonus := 0
+	for _, badge := range qualifyingBadges {
+		svg += fmt.Sprintf(`
+  <circle cx="150" cy="%d" r="8" fill="%s"/>
+  <text x="170" y="%d" class="axis-label" fill="#333">%s (%.1f%%)</text>`,
+			bonusY+displayedBonus*25, badge.color,
+			bonusY+displayedBonus*25+5, badge.label, badge.score)
+		displayedBonus++
+	}
+
+	svg += `
+</svg>`
+
+	return svg
 }

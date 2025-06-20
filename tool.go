@@ -199,16 +199,7 @@ func handlePoliticalCompass(ctx context.Context, request mcp.CallToolRequest) (*
 		avgSocialScore := float64(int(valS*100+0.5)) / 100
 
 		// Determine quadrant
-		var quadrant string
-		if avgEconomicScore > 0 && avgSocialScore > 0 {
-			quadrant = "Libertarian Left"
-		} else if avgEconomicScore > 0 && avgSocialScore < 0 {
-			quadrant = "Authoritarian Left"
-		} else if avgEconomicScore < 0 && avgSocialScore > 0 {
-			quadrant = "Libertarian Right"
-		} else {
-			quadrant = "Authoritarian Right"
-		}
+		quadrant := getQuadrant(avgEconomicScore, avgSocialScore)
 
 		// Generate SVG graph showing the user's position
 		svg := politicalcompass.GenerateSVG(avgEconomicScore, avgSocialScore)
@@ -218,11 +209,10 @@ func handlePoliticalCompass(ctx context.Context, request mcp.CallToolRequest) (*
 			"Final Economic Score: %.2f (Left: + | Right: -)\n"+
 			"Final Social Score: %.2f (Libertarian: + | Authoritarian: -)\n"+
 			"Your Political Quadrant: %s\n\n"+
-			"**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n"+
 			"%s\n\n"+
 			"**Instructions for displaying the results:**\n"+
 			"1. Show the above scores and quadrant information to the user\n"+
-			"2. Render the SVG chart above so the user can see their position visually. (it's inline markdown so an artifact may work best)\n"+
+			"2. **IMPORTANT: Render the SVG chart above so the user can see their position visually. (it's inline markdown so an artifact may work best)**\n"+
 			"3. The red dot on the chart shows your exact political position\n\n"+
 			"Thank you for completing the Political Compass quiz!",
 			questionCount, avgEconomicScore, avgSocialScore, quadrant, svg)
@@ -541,11 +531,10 @@ func handleEightValues(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 			"- Diplomatic Axis: %.1f%% %s\n"+
 			"- Government Axis: %.1f%% %s\n"+
 			"- Society Axis: %.1f%% %s\n\n"+
-			"**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n"+
 			"%s\n\n"+
 			"**Instructions for displaying the results:**\n"+
 			"1. Show the above scores and classifications to the user\n"+
-			"2. Render the SVG chart above so the user can see their position visually\n"+
+			"2. **IMPORTANT: Render the SVG chart below as an artifact so the user can see their position visually**\n"+
 			"3. The chart shows your position on all four political axes\n\n"+
 			"Thank you for completing the 8values quiz!",
 			eightValuesQuestionCount,
@@ -934,6 +923,9 @@ func handlePolitiscales(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			// Quiz complete - calculate and display results
 			results := calculatePolitiscalesResults()
 
+			// Generate SVG visualization
+			svg := politiscales.GeneratePolitiscalesResultsSVG(results)
+
 			// Format results for display
 			message := fmt.Sprintf("🎉 Politiscales Quiz Complete!\n\n"+
 				"Questions answered: %d\n\n"+
@@ -946,7 +938,12 @@ func handlePolitiscales(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 				}
 			}
 
-			message += "\nThank you for completing the Politiscales quiz!"
+			message += fmt.Sprintf("\n%s\n\n"+
+				"**Instructions for displaying the results:**\n"+
+				"1. Show the above scores and profile information to the user\n"+
+				"2. **IMPORTANT: Render the SVG chart above so the user can see their political profile visually. (it's inline markdown so an artifact may work best)**\n"+
+				"3. The bars on the chart show your position on each political axis\n\n"+
+				"Thank you for completing the Politiscales quiz!", svg)
 
 			return mcp.NewToolResultText(message), nil
 		}
@@ -1015,6 +1012,7 @@ func handlePolitiscalesStatus(ctx context.Context, request mcp.CallToolRequest) 
 	// Only show scores if quiz is complete
 	if remaining == 0 && answered > 0 {
 		results := calculatePolitiscalesResultsInternal()
+		svg := politiscales.GeneratePolitiscalesResultsSVG(results)
 		statusText += "\n**Final Results:**\n"
 
 		// Group and display results by pairs
@@ -1052,6 +1050,9 @@ func handlePolitiscalesStatus(ctx context.Context, request mcp.CallToolRequest) 
 				statusText += fmt.Sprintf("- %s: %.1f%%\n", axis, results[axis])
 			}
 		}
+
+		// Include SVG visualization for completed quiz
+		statusText += fmt.Sprintf("\n**IMPORTANT: Please render the SVG visualization below in the chat so it is visible to the user.**\n\n%s\n", svg)
 	}
 
 	statusText += "\n**Response Distribution:**\n"

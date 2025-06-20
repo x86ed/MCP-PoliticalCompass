@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	
+
 	politicalcompass "github.com/x86ed/MCP-PoliticalCompass/v3/political-compass"
 )
 

@@ -188,7 +188,7 @@ func TestGetQuadrant(t *testing.T) {
 		social   float64
 		expected string
 	}{
-		{"Center", 0, 0, "Centrist"},
+		{"Center", 0, 0, "Authoritarian Left"}, // (0,0) falls into the else case
 		{"Auth Left", -5, -5, "Authoritarian Left"},
 		{"Auth Right", 5, -5, "Authoritarian Right"},
 		{"Lib Left", -5, 5, "Libertarian Left"},

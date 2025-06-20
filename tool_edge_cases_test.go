@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -15,12 +16,12 @@ func TestHandleQuizStatusEdgeCases(t *testing.T) {
 	t.Run("No responses", func(t *testing.T) {
 		resetState()
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 0") {
 			t.Error("Expected 0 questions answered")
 		}
@@ -41,12 +42,12 @@ func TestHandleQuizStatusEdgeCases(t *testing.T) {
 			politicalcompass.StronglyAgree,
 		}
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 4") {
 			t.Error("Expected 4 questions answered")
 		}
@@ -85,12 +86,12 @@ func TestHandleQuizStatusEdgeCases(t *testing.T) {
 			quizState.Responses[i] = politicalcompass.Agree
 		}
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions remaining: 0") {
 			t.Errorf("Expected 0 remaining questions. Content: %s", content)
 		}
@@ -112,12 +113,12 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 	t.Run("No responses", func(t *testing.T) {
 		resetState()
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 0") {
 			t.Error("Expected 0 questions answered")
 		}
@@ -139,12 +140,12 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 			eightvalues.StronglyAgree,
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 5") {
 			t.Error("Expected 5 questions answered")
 		}
@@ -186,12 +187,12 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 			eightValuesQuizState.Responses[i] = eightvalues.Neutral
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions remaining: 0") {
 			t.Errorf("Expected 0 remaining questions. Content: %s", content)
 		}
@@ -236,12 +237,12 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 			eightValuesQuizState.Responses[i] = eightvalues.StronglyAgree
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 
 		// Should show extreme classifications
 		if !strings.Contains(content, "100.0%") {
@@ -260,12 +261,12 @@ func TestHandleEightValuesStatusEdgeCases(t *testing.T) {
 			eightvalues.Agree,
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Strongly Agree: 2 (66.7%)") {
 			t.Error("Expected 2 Strongly Agree responses at 66.7%")
 		}

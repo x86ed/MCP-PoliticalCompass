@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -16,12 +17,12 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 	t.Run("Start with empty response", func(t *testing.T) {
 		resetState()
 
-		response, err := handlePolitiscales(PolitiscalesArgs{Response: ""})
+		response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Politiscales Quiz Started!") {
 			t.Error("Expected quiz start message")
 		}
@@ -40,18 +41,18 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 			resetState()
 
 			// Start quiz
-			_, err := handlePolitiscales(PolitiscalesArgs{Response: ""})
+			_, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 			if err != nil {
 				t.Fatalf("Error starting quiz: %v", err)
 			}
 
 			// Respond with specific value
-			response, err := handlePolitiscales(PolitiscalesArgs{Response: respValue})
+			response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": respValue}))
 			if err != nil {
 				t.Fatalf("Error with response %s: %v", respValue, err)
 			}
 
-			content := response.Content[0].TextContent.Text
+			content := extractTextContent(response)
 			if !strings.Contains(content, "Response recorded!") {
 				t.Error("Expected response recorded message")
 			}
@@ -97,12 +98,12 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 		responses := []string{"", "strongly_agree", "disagree", "neutral", "agree"}
 
 		for i, resp := range responses {
-			response, err := handlePolitiscales(PolitiscalesArgs{Response: resp})
+			response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": resp}))
 			if err != nil {
 				t.Fatalf("Error at step %d with response '%s': %v", i, resp, err)
 			}
 
-			content := response.Content[0].TextContent.Text
+			content := extractTextContent(response)
 
 			if i == 0 {
 				// First call should start quiz
@@ -136,22 +137,22 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 		resetState()
 
 		// Start quiz
-		_, _ = handlePolitiscales(PolitiscalesArgs{Response: ""})
+		_, _ = handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 
 		// Test positive response (should add to YesWeights)
-		_, err := handlePolitiscales(PolitiscalesArgs{Response: "strongly_agree"})
+		_, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": "strongly_agree"}))
 		if err != nil {
 			t.Fatalf("Error with positive response: %v", err)
 		}
 
 		// Test negative response (should add to NoWeights)
-		_, err = handlePolitiscales(PolitiscalesArgs{Response: "strongly_disagree"})
+		_, err = handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": "strongly_disagree"}))
 		if err != nil {
 			t.Fatalf("Error with negative response: %v", err)
 		}
 
 		// Test neutral response (should not affect scores)
-		_, err = handlePolitiscales(PolitiscalesArgs{Response: "neutral"})
+		_, err = handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": "neutral"}))
 		if err != nil {
 			t.Fatalf("Error with neutral response: %v", err)
 		}
@@ -176,16 +177,21 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 			resetState()
 
 			// Start quiz first
-			_, _ = handlePolitiscales(PolitiscalesArgs{Response: ""})
+			_, _ = handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 
 			// Try invalid response
-			_, err := handlePolitiscales(PolitiscalesArgs{Response: invalidResp})
-			if err == nil {
-				t.Errorf("Expected error for invalid response '%s', got none", invalidResp)
+			response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": invalidResp}))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if !strings.Contains(err.Error(), "invalid response") {
-				t.Errorf("Expected 'invalid response' in error message, got: %v", err)
+			if !isErrorResult(response) {
+				t.Errorf("Expected error result for invalid response '%s'", invalidResp)
+			}
+
+			responseText := extractTextContent(response)
+			if !strings.Contains(responseText, "invalid response") {
+				t.Errorf("Expected 'invalid response' in error message, got: %s", responseText)
 			}
 		})
 	}
@@ -197,12 +203,12 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 		// Set non-English language
 		politiscalesLanguage = "fr"
 
-		response, err := handlePolitiscales(PolitiscalesArgs{Response: ""})
+		response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 		if err != nil {
 			t.Fatalf("Error starting quiz in French: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Language: fr") {
 			t.Error("Expected French language indication")
 		}
@@ -216,21 +222,21 @@ func TestHandlePolitiscalesExhaustive(t *testing.T) {
 		resetState()
 
 		// Start the quiz properly
-		_, err := handlePolitiscales(PolitiscalesArgs{Response: ""})
+		_, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 		if err != nil {
 			t.Fatalf("Error starting quiz: %v", err)
 		}
 
 		// Answer all questions to complete the quiz
 		for i := 0; i < len(politiscales.Questions); i++ {
-			response, err := handlePolitiscales(PolitiscalesArgs{Response: "agree"})
+			response, err := handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": "agree"}))
 			if err != nil {
 				t.Fatalf("Error on question %d: %v", i+1, err)
 			}
 
 			// Check if quiz is complete on the last question
 			if i == len(politiscales.Questions)-1 {
-				content := response.Content[0].TextContent.Text
+				content := extractTextContent(response)
 				if !strings.Contains(content, "Politiscales Quiz Complete!") {
 					t.Error("Expected quiz completion message")
 				}
@@ -265,12 +271,12 @@ func TestHandleEightValuesStatusExhaustive(t *testing.T) {
 
 		eightValuesQuizState.Responses = responses
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 
 		// Verify all response types appear in distribution
 		expectedCounts := map[string]int{
@@ -306,12 +312,12 @@ func TestHandleEightValuesStatusExhaustive(t *testing.T) {
 			eightValuesQuizState.Responses = append(eightValuesQuizState.Responses, eightvalues.Neutral)
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "50.0%") {
 			t.Error("Expected neutral 50% scores for zero axis values")
 		}
@@ -333,12 +339,12 @@ func TestHandleEightValuesStatusExhaustive(t *testing.T) {
 			eightValuesQuizState.Responses = append(eightValuesQuizState.Responses, eightvalues.Neutral)
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Final Scores:") {
 			t.Error("Expected final scores section for completed quiz")
 		}
@@ -359,12 +365,12 @@ func TestHandleEightValuesStatusExhaustive(t *testing.T) {
 			eightValuesQuizState.Responses = append(eightValuesQuizState.Responses, eightvalues.StronglyAgree)
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 
 		// Should handle extreme values gracefully
 		if !strings.Contains(content, "100.0%") {
@@ -385,12 +391,12 @@ func TestHandleEightValuesStatusExhaustive(t *testing.T) {
 			eightvalues.StronglyAgree,
 		}
 
-		response, err := handleEightValuesStatus(EightValuesStatusArgs{})
+		response, err := handleEightValuesStatus(context.Background(), createMockRequest("eight_values_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 3") {
 			t.Error("Expected 3 questions answered for sparse responses")
 		}
@@ -480,12 +486,12 @@ func TestHandleQuizStatusExhaustive(t *testing.T) {
 		// But no shuffled questions
 		shuffledQuestions = nil
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error even with corrupted state, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 2") {
 			t.Error("Expected to handle responses even without proper initialization")
 		}
@@ -504,12 +510,12 @@ func TestHandleQuizStatusExhaustive(t *testing.T) {
 			quizState.Responses = append(quizState.Responses, politicalcompass.Agree)
 		}
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error with mismatched state, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		// Should handle the mismatch gracefully
 		if !strings.Contains(content, "Response Distribution:") {
 			t.Error("Expected response distribution section")
@@ -531,12 +537,12 @@ func TestHandleQuizStatusExhaustive(t *testing.T) {
 			quizState.Responses = append(quizState.Responses, politicalcompass.StronglyAgree)
 		}
 
-		response, err := handleQuizStatus(QuizStatusArgs{})
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error with extreme scores, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Your Quadrant:") {
 			t.Error("Expected quadrant information with extreme scores")
 		}
@@ -559,12 +565,12 @@ func TestHandlePolitiscalesStatusExhaustive(t *testing.T) {
 			politiscalesQuizState.Responses[int32(i)] = 1.0 // StronglyAgree equivalent
 		}
 
-		response, err := handlePolitiscalesStatus(PolitiscalesStatusArgs{})
+		response, err := handlePolitiscalesStatus(context.Background(), createMockRequest("politiscales_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		expectedAnswered := fmt.Sprintf("Questions answered: %d", len(politiscales.Questions))
 		if !strings.Contains(content, expectedAnswered) {
 			t.Errorf("Expected all questions to be answered. Content: %s", content)
@@ -586,12 +592,12 @@ func TestHandlePolitiscalesStatusExhaustive(t *testing.T) {
 			politiscalesQuizState.Responses[int32(i)] = politiscales.Neutral
 		}
 
-		response, err := handlePolitiscalesStatus(PolitiscalesStatusArgs{})
+		response, err := handlePolitiscalesStatus(context.Background(), createMockRequest("politiscales_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Language: zh") {
 			t.Error("Expected Chinese language indication")
 		}
@@ -612,12 +618,12 @@ func TestHandlePolitiscalesStatusExhaustive(t *testing.T) {
 		politiscalesCurrentIndex = 3
 		// But leave responses empty
 
-		response, err := handlePolitiscalesStatus(PolitiscalesStatusArgs{})
+		response, err := handlePolitiscalesStatus(context.Background(), createMockRequest("politiscales_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Questions answered: 0") {
 			t.Error("Expected 0 questions answered despite other state")
 		}
@@ -635,13 +641,13 @@ func TestConcurrentAccess(t *testing.T) {
 		// Start a quiz in one goroutine
 		go func() {
 			defer func() { done <- true }()
-			handlePolitiscales(PolitiscalesArgs{Response: ""})
+			handlePolitiscales(context.Background(), createMockRequest("politiscales", map[string]interface{}{"answer": ""}))
 		}()
 
 		// Reset in another goroutine
 		go func() {
 			defer func() { done <- true }()
-			handleResetPolitiscales(ResetPolitiscalesArgs{})
+			handleResetPolitiscales(context.Background(), createMockRequest("reset_politiscales", map[string]interface{}{}))
 		}()
 
 		// Wait for both to complete
@@ -649,7 +655,7 @@ func TestConcurrentAccess(t *testing.T) {
 		<-done
 
 		// Should not crash or corrupt state
-		response, err := handlePolitiscalesStatus(PolitiscalesStatusArgs{})
+		response, err := handlePolitiscalesStatus(context.Background(), createMockRequest("politiscales_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error after concurrent operations, got: %v", err)
 		}

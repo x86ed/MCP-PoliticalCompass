@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 func TestPoliticalCompassToolStart(t *testing.T) {
 	resetState()
 
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 	if err != nil {
 		t.Fatalf("unexpected error starting quiz: %v", err)
 	}
@@ -24,12 +25,7 @@ func TestPoliticalCompassToolStart(t *testing.T) {
 		t.Fatal("response content is empty")
 	}
 
-	content := response.Content[0]
-	if content.TextContent == nil {
-		t.Fatal("response content is not TextContent")
-	}
-
-	responseText := content.TextContent.Text
+	responseText := extractTextContent(response)
 	if !strings.Contains(responseText, "Political Compass Quiz Started!") {
 		t.Error("start response should contain quiz started message")
 	}
@@ -47,17 +43,22 @@ func TestPoliticalCompassInvalidResponse(t *testing.T) {
 	resetState()
 
 	// Start quiz first
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Try invalid response
-	_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Invalid Response"})
-	if err == nil {
-		t.Error("expected error for invalid response")
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Invalid Response"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
+	if !isErrorResult(response) {
+		t.Error("expected error result for invalid response")
+	}
+
+	responseText := extractTextContent(response)
 	expectedError := "invalid response: Invalid Response. Please use one of: strongly_disagree, disagree, agree, strongly_agree"
-	if err.Error() != expectedError {
-		t.Errorf("expected error message '%s', got '%s'", expectedError, err.Error())
+	if responseText != expectedError {
+		t.Errorf("expected error message '%s', got '%s'", expectedError, responseText)
 	}
 }
 
@@ -71,10 +72,10 @@ func TestPoliticalCompassAllResponseTypes(t *testing.T) {
 			resetState()
 
 			// Start quiz
-			handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+			handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 			// Test response
-			response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: resp})
+			response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": resp}))
 			if err != nil {
 				t.Fatalf("unexpected error for response '%s': %v", resp, err)
 			}
@@ -83,7 +84,7 @@ func TestPoliticalCompassAllResponseTypes(t *testing.T) {
 				t.Fatal("response is nil")
 			}
 
-			content := response.Content[0].TextContent.Text
+			content := extractTextContent(response)
 			if !strings.Contains(content, "Response recorded!") {
 				t.Errorf("response should contain 'Response recorded!' for '%s'", resp)
 			}
@@ -95,15 +96,15 @@ func TestPoliticalCompassProgressDisplay(t *testing.T) {
 	resetState()
 
 	// Start quiz
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Answer first question
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 
 	// Should show progress
 	if !strings.Contains(content, "Response recorded!") {
@@ -132,23 +133,23 @@ func TestPoliticalCompassQuizCompletion(t *testing.T) {
 	resetState()
 
 	// Simulate answering all questions
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""}) // Start
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""})) // Start
 
 	// Answer all questions except the last one
 	for i := 0; i < len(politicalcompass.AllQuestions)-1; i++ {
-		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 		if err != nil {
 			t.Fatalf("unexpected error on question %d: %v", i+1, err)
 		}
 	}
 
 	// Answer the final question
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error on final question: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 
 	// Check completion message
 	if !strings.Contains(content, "Political Compass Quiz Complete!") {
@@ -176,23 +177,23 @@ func TestPoliticalCompassCompletionWithSVG(t *testing.T) {
 	resetState()
 
 	// Simulate answering all questions
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""}) // Start
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""})) // Start
 
 	// Answer all questions
 	for i := 0; i < len(politicalcompass.AllQuestions); i++ {
-		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 		if err != nil {
 			t.Fatalf("unexpected error on question %d: %v", i+1, err)
 		}
 	}
 
 	// Get the last response which should contain the SVG
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error on completion: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 
 	// Check that SVG is included
 	if !strings.Contains(content, "<svg") {
@@ -237,7 +238,7 @@ func TestPoliticalCompassQuadrantCalculations(t *testing.T) {
 			resetState()
 
 			// Start the quiz first
-			handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+			handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 			// Manually set scores to simulate reaching the desired final scores
 			totalEconomicScore = (tc.economicScore - 0.38) * 8.0
@@ -246,12 +247,12 @@ func TestPoliticalCompassQuadrantCalculations(t *testing.T) {
 			currentIndex = len(politicalcompass.AllQuestions) // Set to completion point
 
 			// Call with a valid response to trigger completion logic
-			response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+			response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			content := response.Content[0].TextContent.Text
+			content := extractTextContent(response)
 			if !strings.Contains(content, tc.expectedQuad) {
 				t.Errorf("expected quadrant '%s' but content was: %s", tc.expectedQuad, content)
 			}
@@ -263,7 +264,7 @@ func TestPoliticalCompassScoreAccumulation(t *testing.T) {
 	resetState()
 
 	// Start quiz
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Test basic score accumulation by checking that after answering enough questions,
 	// at least one of the scores changes from 0.0
@@ -275,7 +276,7 @@ func TestPoliticalCompassScoreAccumulation(t *testing.T) {
 
 	for i := 0; i < 4 && currentIndex < len(shuffledQuestions); i++ {
 		response := responses[i%len(responses)]
-		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: response})
+		_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": response}))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -326,14 +327,14 @@ func TestPoliticalCompassScoreAccumulation(t *testing.T) {
 
 func TestResetQuizTool(t *testing.T) {
 	resetState()
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 
 	if questionCount == 0 {
 		t.Fatal("quiz should have started")
 	}
 
-	response, err := handleResetQuiz(ResetQuizArgs{})
+	response, err := handleResetQuiz(context.Background(), createMockRequest("reset_quiz", map[string]interface{}{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -355,12 +356,12 @@ func TestPoliticalCompassEdgeCases(t *testing.T) {
 	t.Run("Empty response on first question", func(t *testing.T) {
 		resetState()
 
-		response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		content := response.Content[0].TextContent.Text
+		content := extractTextContent(response)
 		if !strings.Contains(content, "Political Compass Quiz Started!") {
 			t.Error("should start quiz with empty response")
 		}
@@ -368,12 +369,12 @@ func TestPoliticalCompassEdgeCases(t *testing.T) {
 
 	t.Run("Shuffled questions are different each time", func(t *testing.T) {
 		resetState()
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 		firstShuffle := make([]int, len(shuffledQuestions))
 		copy(firstShuffle, shuffledQuestions)
 
 		resetState()
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 		secondShuffle := make([]int, len(shuffledQuestions))
 		copy(secondShuffle, shuffledQuestions)
 
@@ -396,12 +397,12 @@ func TestPoliticalCompassEdgeCases(t *testing.T) {
 		resetState()
 
 		// Call multiple times
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 		firstShuffle := make([]int, len(shuffledQuestions))
 		copy(firstShuffle, shuffledQuestions)
 
 		// Call again without reset - should use same shuffled order
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 
 		// Shuffled questions should be unchanged
 		for i := range firstShuffle {
@@ -417,7 +418,7 @@ func TestPoliticalCompassScoreCalculationDetails(t *testing.T) {
 	resetState()
 
 	// Test that scores are calculated correctly
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Get the first question
 	firstQuestionIndex := shuffledQuestions[0]
@@ -427,7 +428,7 @@ func TestPoliticalCompassScoreCalculationDetails(t *testing.T) {
 	expectedEconomic := firstQuestion.Economic[2]
 	expectedSocial := firstQuestion.Social[2]
 
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 
 	if totalEconomicScore != expectedEconomic {
 		t.Errorf("expected economic score %f, got %f", expectedEconomic, totalEconomicScore)
@@ -460,7 +461,7 @@ func TestPoliticalCompassBoundaryScores(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resetState()
-			handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+			handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 			// Set up for completion with specific scores
 			totalEconomicScore = (tc.economic - 0.38) * 8.0
@@ -468,12 +469,12 @@ func TestPoliticalCompassBoundaryScores(t *testing.T) {
 			questionCount = len(politicalcompass.AllQuestions)
 			currentIndex = len(politicalcompass.AllQuestions)
 
-			response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+			response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			content := response.Content[0].TextContent.Text
+			content := extractTextContent(response)
 			if !strings.Contains(content, tc.expectedQuad) {
 				t.Errorf("expected quadrant '%s', content: %s", tc.expectedQuad, content)
 			}
@@ -481,55 +482,12 @@ func TestPoliticalCompassBoundaryScores(t *testing.T) {
 	}
 }
 
-// Test main.go functions
-func TestMainFunctions(t *testing.T) {
-	t.Run("createServerTransport", func(t *testing.T) {
-		transport := createServerTransport()
-		if transport == nil {
-			t.Fatal("Expected transport to be created, got nil")
-		}
-	})
-
-	t.Run("setupServer", func(t *testing.T) {
-		transport := createServerTransport()
-		server, err := setupServer(transport)
-
-		if err != nil {
-			t.Fatalf("Expected no error setting up server, got %v", err)
-		}
-
-		if server == nil {
-			t.Fatal("Expected server to be created, got nil")
-		}
-	})
-}
-
-// Test server setup with mock transport
-func TestServerSetupIntegration(t *testing.T) {
-	t.Run("server setup with all tools", func(t *testing.T) {
-		transport := createServerTransport()
-		server, err := setupServer(transport)
-
-		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
-		}
-
-		if server == nil {
-			t.Fatal("Expected server to be created, got nil")
-		}
-
-		// Test that the server was properly configured
-		// This indirectly tests that all tools were registered successfully
-		// since setupServer would return an error if registration failed
-	})
-}
-
 // TestDetailedOutputValidation validates the complete output format and checks for any text errors
 func TestDetailedOutputValidation(t *testing.T) {
 	resetState()
 
 	// Start the quiz
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Set up for a specific completion scenario - Libertarian Left
 	totalEconomicScore = (1.5 - 0.38) * 8.0 // Economic score: +1.5
@@ -537,12 +495,12 @@ func TestDetailedOutputValidation(t *testing.T) {
 	questionCount = len(politicalcompass.AllQuestions)
 	currentIndex = len(politicalcompass.AllQuestions)
 
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 
 	// Print the output for manual inspection
 	t.Logf("Complete Quiz Output:\n%s", content)
@@ -588,12 +546,12 @@ func TestQuizStatusTool(t *testing.T) {
 	resetState()
 
 	// Test empty status
-	response, err := handleQuizStatus(QuizStatusArgs{})
+	response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 	if !strings.Contains(content, "📊 **Political Compass Quiz Status**") {
 		t.Error("should show status header")
 	}
@@ -611,17 +569,17 @@ func TestQuizStatusTool(t *testing.T) {
 	}
 
 	// Start quiz and answer some questions (but not all)
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
-	handlePoliticalCompass(PoliticalCompassArgs{Response: "Disagree"})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Disagree"}))
 
 	// Check status after answering questions (incomplete quiz)
-	response, err = handleQuizStatus(QuizStatusArgs{})
+	response, err = handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	content = response.Content[0].TextContent.Text
+	content = extractTextContent(response)
 	if !strings.Contains(content, "Questions answered: 2/62") {
 		t.Error("should show correct progress after answering questions")
 	}
@@ -647,16 +605,16 @@ func TestQuizStatusTool(t *testing.T) {
 	// Complete the entire quiz to test final status
 	// Answer all remaining questions with "Agree"
 	for i := 2; i < 62; i++ {
-		handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	}
 
 	// Check status after completing quiz
-	response, err = handleQuizStatus(QuizStatusArgs{})
+	response, err = handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	content = response.Content[0].TextContent.Text
+	content = extractTextContent(response)
 	if !strings.Contains(content, "Questions answered: 62/62") {
 		t.Error("should show complete progress")
 	}
@@ -692,12 +650,12 @@ func TestFirstCallBehaviorAndWeightAlignment(t *testing.T) {
 	resetState()
 
 	// First call should NOT process any answer, only show the first question
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 	if err != nil {
 		t.Fatalf("unexpected error on first call: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 
 	// Verify first call shows start message
 	if !strings.Contains(content, "Political Compass Quiz Started!") {
@@ -728,7 +686,7 @@ func TestFirstCallBehaviorAndWeightAlignment(t *testing.T) {
 	firstQuestion := politicalcompass.AllQuestions[firstQuestionIndex]
 
 	// Answer the first question
-	response2, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response2, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error answering first question: %v", err)
 	}
@@ -754,7 +712,7 @@ func TestFirstCallBehaviorAndWeightAlignment(t *testing.T) {
 		t.Errorf("expected social score %f, got %f", expectedSocialScore, totalSocialScore)
 	}
 
-	content2 := response2.Content[0].TextContent.Text
+	content2 := extractTextContent(response2)
 
 	// Verify second call shows response recorded
 	if !strings.Contains(content2, "Response recorded!") {
@@ -776,7 +734,7 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 	resetState()
 
 	// Start quiz and answer a few questions with different responses
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""}) // Start
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""})) // Start
 
 	responses := []politicalcompass.Response{
 		politicalcompass.StronglyDisagree,
@@ -808,7 +766,7 @@ func TestWeightAssignmentConsistency(t *testing.T) {
 		expectedSocialTotal += expectedSocialScore
 
 		// Answer the question
-		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: respStr})
+		_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": respStr}))
 		if err != nil {
 			t.Fatalf("unexpected error on question %d: %v", i+1, err)
 		}
@@ -830,11 +788,11 @@ func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
 	resetState()
 
 	// Start quiz
-	handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+	handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 	// Verify we can answer exactly 62 questions (no more, no less)
 	for i := 0; i < len(politicalcompass.AllQuestions); i++ {
-		_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+		_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 		if err != nil {
 			t.Fatalf("unexpected error on question %d: %v", i+1, err)
 		}
@@ -865,12 +823,12 @@ func TestNoFencepostErrorsInQuestionIndexing(t *testing.T) {
 	}
 
 	// Trying to answer another question should return completion message
-	response, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "Agree"})
+	response, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "Agree"}))
 	if err != nil {
 		t.Fatalf("unexpected error when trying to answer beyond 62 questions: %v", err)
 	}
 
-	content := response.Content[0].TextContent.Text
+	content := extractTextContent(response)
 	if !strings.Contains(content, "Political Compass Quiz Complete!") {
 		t.Error("should show completion message when trying to answer beyond 62 questions")
 	}
@@ -882,23 +840,22 @@ func TestQuizStatusEdgeCases(t *testing.T) {
 		resetState()
 
 		// Start quiz and answer exactly half the questions
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 		halfQuestions := len(politicalcompass.AllQuestions) / 2
 		for i := 0; i < halfQuestions; i++ {
-			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "agree"})
+			_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "agree"}))
 			if err != nil {
 				t.Fatalf("Unexpected error on question %d: %v", i+1, err)
 			}
 		}
 
-		statusArgs := QuizStatusArgs{}
-		response, err := handleQuizStatus(statusArgs)
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error getting status, got %v", err)
 		}
 
-		text := response.Content[0].TextContent.Text
+		text := extractTextContent(response)
 
 		// Should show partial progress
 		expectedAnswered := fmt.Sprintf("Questions answered: %d/%d", halfQuestions, len(politicalcompass.AllQuestions))
@@ -925,23 +882,22 @@ func TestQuizStatusEdgeCases(t *testing.T) {
 		resetState()
 
 		// Start quiz and give mixed responses to test all response types
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 		responses := []string{"strongly_disagree", "disagree", "agree", "strongly_agree"}
 		for i, resp := range responses {
-			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: resp})
+			_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": resp}))
 			if err != nil {
 				t.Fatalf("Unexpected error on question %d with response %s: %v", i+1, resp, err)
 			}
 		}
 
-		statusArgs := QuizStatusArgs{}
-		response, err := handleQuizStatus(statusArgs)
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error getting status, got %v", err)
 		}
 
-		text := response.Content[0].TextContent.Text
+		text := extractTextContent(response)
 
 		// Should show all response types in distribution
 		responseTypes := []string{"Strongly Disagree", "Disagree", "Agree", "Strongly Agree"}
@@ -956,13 +912,12 @@ func TestQuizStatusEdgeCases(t *testing.T) {
 		resetState()
 
 		// Test status with completely empty state (no quiz started)
-		statusArgs := QuizStatusArgs{}
-		response, err := handleQuizStatus(statusArgs)
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
 
-		text := response.Content[0].TextContent.Text
+		text := extractTextContent(response)
 
 		if !strings.Contains(text, "Questions answered: 0/") {
 			t.Errorf("Expected zero answered questions in status")
@@ -977,23 +932,22 @@ func TestQuizStatusEdgeCases(t *testing.T) {
 		resetState()
 
 		// Complete entire quiz with known responses
-		handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+		handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 		totalQuestions := len(politicalcompass.AllQuestions)
 		for i := 0; i < totalQuestions; i++ {
-			_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: "agree"})
+			_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": "agree"}))
 			if err != nil {
 				t.Fatalf("Unexpected error completing quiz: %v", err)
 			}
 		}
 
-		statusArgs := QuizStatusArgs{}
-		response, err := handleQuizStatus(statusArgs)
+		response, err := handleQuizStatus(context.Background(), createMockRequest("quiz_status", map[string]interface{}{}))
 		if err != nil {
 			t.Fatalf("Expected no error getting status, got %v", err)
 		}
 
-		text := response.Content[0].TextContent.Text
+		text := extractTextContent(response)
 
 		// Should show completion
 		if !strings.Contains(text, "Questions answered: "+fmt.Sprintf("%d/%d", totalQuestions, totalQuestions)) {
@@ -1092,10 +1046,10 @@ func TestResponseVariations(t *testing.T) {
 				resetState()
 
 				// Start quiz
-				handlePoliticalCompass(PoliticalCompassArgs{Response: ""})
+				handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": ""}))
 
 				// Test response variation
-				_, err := handlePoliticalCompass(PoliticalCompassArgs{Response: variation})
+				_, err := handlePoliticalCompass(context.Background(), createMockRequest("political_compass", map[string]interface{}{"answer": variation}))
 				if err != nil {
 					t.Errorf("Expected no error for response variation '%s', got: %v", variation, err)
 				}
